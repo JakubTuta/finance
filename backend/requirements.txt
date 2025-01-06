@@ -1,0 +1,5 @@
+python-dotenv
+fastapi[standard]
+motor
+beanie
+pymongo
