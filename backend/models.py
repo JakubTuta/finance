@@ -1,6 +1,7 @@
 import datetime
 import typing
 
+import bson
 import pydantic
 from motor.motor_asyncio import AsyncIOMotorCollection
 
@@ -16,7 +17,7 @@ class FinanceItem(pydantic.BaseModel):
     """
 
     id: typing.Optional[str] = pydantic.Field(
-        default=None, alias="_id", description="Unique identifier"
+        default=None, description="Unique identifier"
     )
     name: str = pydantic.Field(description="Name of the expense")
     amount: float = pydantic.Field(description="Amount of the expense")
@@ -26,7 +27,7 @@ class FinanceItem(pydantic.BaseModel):
     @staticmethod
     def from_doc(doc) -> "FinanceItem":
         return FinanceItem(
-            _id=str(doc["_id"]),
+            id=str(doc["_id"]),
             name=doc["name"],
             amount=doc["amount"],
             date=doc["date"],
@@ -44,15 +45,40 @@ class FinanceItemWrapper:
     def __init__(self, collection: AsyncIOMotorCollection):
         self.collection: AsyncIOMotorCollection = collection
 
-    async def list_items(self) -> typing.AsyncGenerator[FinanceItem, None]:
-        async for doc in self.collection.find():
+    async def list_items(
+        self,
+        start_date: typing.Union[str, datetime.datetime, None],
+        end_date: typing.Union[str, datetime.datetime, None],
+    ) -> typing.AsyncGenerator[FinanceItem, None]:
+        query = {}
+
+        if start_date is not None:
+            if isinstance(start_date, str):
+                start_date = datetime.datetime.fromisoformat(start_date)
+
+            query["$gte"] = start_date
+
+        if end_date is not None:
+            if isinstance(end_date, str):
+                end_date = datetime.datetime.fromisoformat(end_date)
+
+            query["$lte"] = end_date
+
+        cursor = self.collection.find({"date": query}).sort("date", 1)
+
+        async for doc in cursor:
             yield FinanceItem.from_doc(doc)
 
-    async def get_item(self, item_id: str) -> typing.Union[FinanceItem, None]:
+    async def get_item(
+        self, item_id: typing.Union[str, bson.ObjectId]
+    ) -> typing.Union[FinanceItem, None]:
+        if isinstance(item_id, str):
+            item_id = bson.ObjectId(item_id)
+
         doc = await self.collection.find_one({"_id": item_id})
 
         if doc is None:
-            return None
+            raise ValueError("Item not found")
 
         return FinanceItem.from_doc(doc)
 
@@ -64,15 +90,21 @@ class FinanceItemWrapper:
         return response.inserted_id
 
     async def update_item(
-        self, item: typing.Dict[str, typing.Union[str, float]]
+        self,
+        item_id: typing.Union[str, bson.ObjectId],
+        item: typing.Dict[str, typing.Union[str, float]],
     ) -> bool:
-        response = await self.collection.update_one(
-            {"_id": item["_id"]}, {"$set": item}
-        )
+        if isinstance(item_id, str):
+            item_id = bson.ObjectId(item_id)
+
+        response = await self.collection.update_one({"_id": item_id}, {"$set": item})
 
         return response.modified_count == 1
 
-    def delete_item(self, item_id: str) -> bool:
-        response = self.collection.delete_one({"_id": item_id})
+    async def delete_item(self, item_id: typing.Union[str, bson.ObjectId]) -> bool:
+        if isinstance(item_id, str):
+            item_id = bson.ObjectId(item_id)
 
-        return response.deleted_count == 1  # type: ignore
+        response = await self.collection.delete_one({"_id": item_id})
+
+        return response.deleted_count == 1

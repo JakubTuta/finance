@@ -4,7 +4,7 @@ import os
 import dotenv
 import fastapi
 from fastapi.middleware.cors import CORSMiddleware
-from items import router as items_router
+from finances import router as finances_router
 from models import FinanceItemWrapper
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 
@@ -41,7 +41,7 @@ app.add_middleware(
 )
 
 routers = [
-    items_router,
+    finances_router,
 ]
 
 for router in routers:
