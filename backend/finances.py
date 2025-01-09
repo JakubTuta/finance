@@ -58,7 +58,9 @@ async def create_finance_item(request: fastapi.Request) -> models.FinanceItem:
 
     wrapper = main.app.wrapper  # type: ignore
 
-    await wrapper.create_item(finance_item.model_dump())
+    item_id = await wrapper.create_item(finance_item.model_dump())
+
+    finance_item.id = item_id
 
     return finance_item
 

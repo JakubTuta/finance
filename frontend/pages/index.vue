@@ -10,13 +10,6 @@ const editedItem = ref<FinanceItem | null>(null)
 
 const isPositive = (amount: number) => amount >= 0
 
-const mapCategories: { [key: string]: string } = {
-  entertainment: 'Entertainment',
-  food: 'Food',
-  groceries: 'Groceries',
-  others: 'Others',
-}
-
 const itemsPerDate = computed(() => {
   const dates: Date[] = []
   let currentDate = startDate.value
@@ -27,7 +20,7 @@ const itemsPerDate = computed(() => {
   }
 
   return dates.map((date) => {
-    const items = financeItems.value.filter(item => isSameDay(new Date(item.date), date))
+    const items = financeItems.value.filter((item: FinanceItem) => isSameDay(new Date(item.date), date))
 
     return { date, items }
   }).filter(({ items }) => items.length)
@@ -108,7 +101,7 @@ function openDialog(item: FinanceItem | null) {
         </v-btn>
       </v-card-title>
 
-      <v-card-text class="mt-2">
+      <v-card-text class="mt-4">
         <v-row
           v-for="(itemsInDate, index) in itemsPerDate"
           :key="dateToString(itemsInDate.date)"
@@ -118,6 +111,18 @@ function openDialog(item: FinanceItem | null) {
         >
           <span class="text-h6">
             {{ dateToString(itemsInDate.date) }}
+          </span>
+
+          <span class="text-h6 ml-6">
+            Daily:
+
+            <span
+              :class="isPositive(itemsInDate.items.reduce((acc, item) => acc + item.amount, 0))
+                ? 'text-success'
+                : 'text-error'"
+            >
+              {{ itemsInDate.items.reduce((acc, item) => acc + item.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') }} zł
+            </span>
           </span>
 
           <v-divider class="mb-1 mt-2" />
@@ -143,7 +148,9 @@ function openDialog(item: FinanceItem | null) {
               </v-card-title>
 
               <v-card-subtitle>
-                {{ mapCategories[item.category] }}
+                <v-chip :color="mapCategoriesColor[item.category]">
+                  {{ mapCategories[item.category] }}
+                </v-chip>
               </v-card-subtitle>
 
               <v-card-text
@@ -151,7 +158,7 @@ function openDialog(item: FinanceItem | null) {
                 style="display: flex; justify-content: space-between; align-items: center;"
               >
                 <span>
-                  {{ `${item.amount} zł` }}
+                  {{ `${item.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} zł` }}
                 </span>
 
                 <v-btn

@@ -10,28 +10,12 @@ const isShow = defineModel('isShow', { type: Boolean, default: false })
 const appStore = useAppStore()
 
 const name = ref('')
-const amount = ref(0)
+const amount = ref<number | null>(null)
 const date = ref(new Date())
-const category = ref('')
+const category = ref<string | null>(null)
+const valid = ref(false)
 
-const categoryItems = [
-  {
-    title: 'Entertainment',
-    value: 'entertainment',
-  },
-  {
-    title: 'Food',
-    value: 'food',
-  },
-  {
-    title: 'Groceries',
-    value: 'groceries',
-  },
-  {
-    title: 'Others',
-    value: 'others',
-  },
-]
+const categoryItems = Object.entries(mapCategories).map(([key, value]) => ({ title: value, value: key }))
 
 watch(editedItem, (newValue) => {
   if (!newValue)
@@ -52,8 +36,11 @@ function close() {
 }
 
 function save() {
-  if (!name.value || !amount.value || !category.value)
+  if (!name.value || !amount.value || !category.value) {
+    valid.value = false
+
     return
+  }
 
   if (editedItem.value) {
     appStore.updateFinanceItem({
@@ -61,7 +48,7 @@ function save() {
       name: name.value,
       amount: amount.value,
       date: date.value,
-      category: category.value,
+      category: category.value as categories,
     })
   }
   else {
@@ -70,11 +57,15 @@ function save() {
       name: name.value,
       amount: amount.value,
       date: date.value,
-      category: category.value,
+      category: category.value as categories,
     })
   }
 
   close()
+}
+
+function requiredRule(value: string | number | null, fieldName: string) {
+  return !!value || `${fieldName} is required`
 }
 </script>
 
@@ -85,32 +76,37 @@ function save() {
     @click:outside="close"
   >
     <v-card>
-      <v-card-title>
-        {{ editedItem
-          ? 'Edit'
-          : 'Add' }} Finance Item
-      </v-card-title>
+      <v-form
+        v-model="valid"
+        @submit.prevent
+      >
+        <v-card-title>
+          {{ editedItem
+            ? 'Edit'
+            : 'Add' }} Finance Item
+        </v-card-title>
 
-      <v-divider />
+        <v-divider />
 
-      <v-card-text>
-        <v-form>
+        <v-card-text>
           <v-text-field
             v-model="name"
-            class="mb-2"
+            class="mb-4"
             label="Name"
             required
+            :rules="[() => requiredRule(name, 'Name')]"
           />
 
           <v-text-field
-            v-model="amount"
-            class="my-2"
+            v-model.number="amount"
+            class="my-4"
             label="Amount"
             required
+            :rules="[() => requiredRule(amount, 'Amount')]"
           />
 
           <v-text-field
-            class="my-2"
+            class="my-4"
             readonly
             label="Date"
             :model-value="dateToString(date)"
@@ -135,35 +131,37 @@ function save() {
 
           <v-select
             v-model="category"
-            class="mt-2"
+            class="mt-4"
             :items="categoryItems"
             label="Category"
             required
+            :rules="[() => requiredRule(category, 'Category')]"
           />
-        </v-form>
-      </v-card-text>
+        </v-card-text>
 
-      <v-divider />
+        <v-divider />
 
-      <v-card-actions>
-        <v-spacer />
+        <v-card-actions>
+          <v-spacer />
 
-        <v-btn
-          color="error"
-          variant="text"
-          @click="close"
-        >
-          Cancel
-        </v-btn>
+          <v-btn
+            color="error"
+            variant="text"
+            @click="close"
+          >
+            Cancel
+          </v-btn>
 
-        <v-btn
-          color="success"
-          variant="text"
-          @click="save"
-        >
-          Save
-        </v-btn>
-      </v-card-actions>
+          <v-btn
+            color="success"
+            variant="text"
+            type="submit"
+            @click="save"
+          >
+            Save
+          </v-btn>
+        </v-card-actions>
+      </v-form>
     </v-card>
   </v-dialog>
 </template>

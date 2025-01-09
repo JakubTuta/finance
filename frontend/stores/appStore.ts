@@ -2,7 +2,7 @@ export interface FinanceItem {
   id: string
   name: string
   amount: number
-  category: string
+  category: categories
   date: Date | string
 }
 

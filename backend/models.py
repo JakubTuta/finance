@@ -87,7 +87,7 @@ class FinanceItemWrapper:
     ) -> str:
         response = await self.collection.insert_one(item)
 
-        return response.inserted_id
+        return str(response.inserted_id)
 
     async def update_item(
         self,

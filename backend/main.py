@@ -13,7 +13,14 @@ dotenv.load_dotenv()
 
 @contextlib.asynccontextmanager
 async def database_lifespan(app: fastapi.FastAPI):
-    mongodb_client: AsyncIOMotorClient = AsyncIOMotorClient(os.getenv("DATABASE_URL"))
+    IS_DOCKER = os.getenv("DOCKER", "false").lower() == "true"
+    DATABASE_URL = (
+        os.getenv("DOCKER_DATABASE_HOST")
+        if IS_DOCKER
+        else os.getenv("LOCAL_DATABASE_HOST")
+    )
+
+    mongodb_client: AsyncIOMotorClient = AsyncIOMotorClient(DATABASE_URL)
     mongodb_database: AsyncIOMotorDatabase = mongodb_client[os.getenv("DATABASE_NAME")]  # type: ignore
     collection = mongodb_database["Finances"]  # type: ignore
 
