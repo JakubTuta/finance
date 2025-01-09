@@ -7,20 +7,42 @@ const endDate = ref(endOfDay(new Date()))
 const selectedDates = ref<Date[]>(populateSelectedDates())
 const isShowDialog = ref(false)
 const editedItem = ref<FinanceItem | null>(null)
+const search = ref('')
+const selectedCategory = ref<string | null>(null)
 
 const isPositive = (amount: number) => amount >= 0
 
+const filteredItems = computed(() => {
+  const filterByName = (item: FinanceItem) => {
+    if (!search.value)
+      return true
+
+    return item.name.toLowerCase().includes(search.value.toLowerCase())
+  }
+
+  const filterByCategory = (item: FinanceItem) => {
+    if (!selectedCategory.value)
+      return true
+
+    return item.category === selectedCategory.value
+  }
+
+  return financeItems.value
+    .filter(filterByName)
+    .filter(filterByCategory)
+})
+
 const itemsPerDate = computed(() => {
   const dates: Date[] = []
-  let currentDate = startDate.value
+  let currentDate = endDate.value
 
-  while (currentDate <= endDate.value) {
+  while (currentDate >= startDate.value) {
     dates.push(currentDate)
-    currentDate = addDays(currentDate, 1)
+    currentDate = addDays(currentDate, -1)
   }
 
   return dates.map((date) => {
-    const items = financeItems.value.filter((item: FinanceItem) => isSameDay(new Date(item.date), date))
+    const items = filteredItems.value.filter((item: FinanceItem) => isSameDay(new Date(item.date), date))
 
     return { date, items }
   }).filter(({ items }) => items.length)
@@ -64,41 +86,70 @@ function openDialog(item: FinanceItem | null) {
 <template>
   <v-container>
     <v-card>
-      <v-card-title style="display: flex; justify-content: space-between; align-items: center;">
-        <div class="text-primary text-h6 cursor-pointer">
-          {{ dateToString(startDate) === dateToString(endDate)
-            ? `Date: ${dateToString(startDate)}`
-            : `Dates: ${dateToString(startDate)} - ${dateToString(endDate)}` }}
-
-          <v-menu
-            activator="parent"
-            :close-on-content-click="false"
-          >
-            <v-card max-width="350">
-              <v-card-text>
-                <v-date-picker
-                  v-model="selectedDates"
-                  :year="new Date().getFullYear()"
-                  :month="new Date().getMonth()"
-                  color="primary"
-                  :first-day-of-week="1"
-                  width="100%"
-                  hide-header
-                  landscape
-                  multiple="range"
-                />
-              </v-card-text>
-            </v-card>
-          </v-menu>
-        </div>
-
-        <v-btn
-          prepend-icon="mdi-plus"
-          color="primary"
-          @click="openDialog(null)"
+      <v-card-title>
+        <v-row
+          class="pa-2"
+          style="display: flex; justify-content: space-between; align-items: center;"
         >
-          Add new
-        </v-btn>
+          <div class="text-primary text-h6 cursor-pointer">
+            {{ dateToString(startDate) === dateToString(endDate)
+              ? `Date: ${dateToString(startDate)}`
+              : `Dates: ${dateToString(startDate)} - ${dateToString(endDate)}` }}
+
+            <v-menu
+              activator="parent"
+              :close-on-content-click="false"
+            >
+              <v-card max-width="350">
+                <v-card-text>
+                  <v-date-picker
+                    v-model="selectedDates"
+                    :year="new Date().getFullYear()"
+                    :month="new Date().getMonth()"
+                    color="primary"
+                    :first-day-of-week="1"
+                    width="100%"
+                    hide-header
+                    landscape
+                    multiple="range"
+                  />
+                </v-card-text>
+              </v-card>
+            </v-menu>
+          </div>
+
+          <v-btn
+            prepend-icon="mdi-plus"
+            color="primary"
+            @click="openDialog(null)"
+          >
+            Add new
+          </v-btn>
+        </v-row>
+
+        <v-row>
+          <v-col cols="4">
+            <v-text-field
+              v-model="search"
+              prepend-inner-icon="mdi-magnify"
+              label="Search"
+              clearable
+            />
+          </v-col>
+
+          <v-col cols="4">
+            <v-select
+              v-model="selectedCategory"
+              :items="Object.entries(mapCategories).map(([
+                key,
+                value,
+              ]) => ({'title': value,
+                      'value': key}))"
+              label="Filter by category"
+              clearable
+            />
+          </v-col>
+        </v-row>
       </v-card-title>
 
       <v-card-text class="mt-4">
