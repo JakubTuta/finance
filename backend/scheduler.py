@@ -1,38 +1,39 @@
-import threading
-import time
+import asyncio
+import datetime
+import typing
 
 import main
+from models import FinanceItem
 
 
 class Scheduler:
     def __init__(self):
         self.wrapper = main.app.wrapper  # type: ignore
-        self.threads = {}
 
-        self.create_new_payments()
+    def start(self):
+        asyncio.create_task(self.create_new_payments())
 
-    def create_new_payments(self):
-        def wrapper():
-            today_payments = self.wrapper.list_next_payments()
+    async def create_new_payments(self):
+        today_payments: typing.AsyncGenerator[FinanceItem, None] = (
+            self.wrapper.list_next_payments()
+        )
 
-            for payment in today_payments:
-                date_diff = payment.next_payment - payment.date
-                date_diff_in_days = date_diff.days
+        async for payment in today_payments:
+            if payment.next_payment is None:
+                continue
 
-                item_data = {
-                    "name": payment.name,
-                    "amount": payment.amount,
-                    "date": payment.next_payment,
-                    "category": payment.category,
-                    "next_payment": payment.next_payment + date_diff_in_days,
-                }
+            date_diff = payment.next_payment - payment.date
+            date_diff_in_days = date_diff.days
 
-                self.wrapper.create_item(item_data)
+            item_data = {
+                "name": payment.name,
+                "amount": payment.amount,
+                "date": payment.next_payment,
+                "category": payment.category,
+                "next_payment": payment.next_payment
+                + datetime.timedelta(days=date_diff_in_days),
+            }
 
-            time.sleep(60 * 60 * 24)
+            self.wrapper.create_item(item_data)
 
-        thread = threading.Thread(target=wrapper)
-        thread.daemon = True
-        thread.start()
-
-        self.threads["create_new_payments"] = thread
+        await asyncio.sleep(60 * 60 * 24)
