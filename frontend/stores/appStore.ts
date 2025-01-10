@@ -4,6 +4,7 @@ export interface FinanceItem {
   amount: number
   category: categories
   date: Date | string
+  nextPayment: Date | string | null
 }
 
 export const useAppStore = defineStore('app', () => {
@@ -19,6 +20,9 @@ export const useAppStore = defineStore('app', () => {
       amount: item.amount,
       category: item.category,
       date: new Date(item.date),
+      nextPayment: item.nextPayment
+        ? new Date(item.nextPayment)
+        : null,
     }
   }
 

@@ -23,21 +23,32 @@ class FinanceItem(pydantic.BaseModel):
     amount: float = pydantic.Field(description="Amount of the expense")
     date: datetime.datetime = pydantic.Field(description="Date of the expense")
     category: str = pydantic.Field(description="Category of the expense")
+    next_payment: typing.Optional[datetime.datetime] = pydantic.Field(
+        description="Next payment date", default=None
+    )
 
     @staticmethod
     def from_doc(doc) -> "FinanceItem":
         return FinanceItem(
-            id=str(doc["_id"]),
-            name=doc["name"],
-            amount=doc["amount"],
-            date=doc["date"],
-            category=doc["category"],
+            id=str(doc.get("_id", None)),
+            name=doc.get("name", ""),
+            amount=doc.get("amount", 0.0),
+            date=doc.get("date", datetime.datetime.now()),
+            category=doc.get("category", ""),
+            next_payment=doc.get("next_payment", None),
         )
 
     @pydantic.field_validator("date", mode="before")
     def parse_date(cls, value) -> datetime.datetime:
         if isinstance(value, str):
             return datetime.datetime.fromisoformat(value)
+        return value
+
+    @pydantic.field_validator("next_payment", mode="before")
+    def parse_next_payment(cls, value) -> typing.Optional[datetime.datetime]:
+        if isinstance(value, str):
+            return datetime.datetime.fromisoformat(value)
+
         return value
 
 
@@ -65,6 +76,18 @@ class FinanceItemWrapper:
             query["$lte"] = end_date
 
         cursor = self.collection.find({"date": query}).sort("date", 1)
+
+        async for doc in cursor:
+            yield FinanceItem.from_doc(doc)
+
+    async def list_next_payments(self) -> typing.AsyncGenerator[FinanceItem, None]:
+        now = datetime.datetime.now()
+        start_of_day = datetime.datetime(now.year, now.month, now.day, 0, 0, 0)
+        end_of_day = datetime.datetime(now.year, now.month, now.day, 23, 59, 59)
+
+        cursor = self.collection.find(
+            {"next_payment": {"$gte": start_of_day, "$lte": end_of_day}}
+        )
 
         async for doc in cursor:
             yield FinanceItem.from_doc(doc)
