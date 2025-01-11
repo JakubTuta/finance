@@ -28,6 +28,11 @@ watch(editedItem, (newValue) => {
   amount.value = newValue.amount
   date.value = new Date(newValue.date)
   category.value = newValue.category
+  paymentType.value = newValue.next_payment
+    ? 'recurring'
+    : 'one-time'
+  recurringPaymentCount.value = newValue.next_payment_interval_value || 1
+  recurringPaymentInterval.value = newValue.next_payment_interval || 'day'
 }, { immediate: true })
 
 function close() {
@@ -36,6 +41,10 @@ function close() {
   amount.value = 0
   date.value = new Date()
   category.value = ''
+  valid.value = false
+  paymentType.value = 'one-time'
+  recurringPaymentCount.value = 1
+  recurringPaymentInterval.value = 'day'
 }
 
 function save() {
@@ -63,25 +72,26 @@ function save() {
     }
   }
 
+  const financeObject: FinanceItem = {
+    id: editedItem.value?.id || null,
+    name: name.value,
+    amount: amount.value,
+    date: date.value,
+    category: category.value as categories,
+    next_payment: nextPayment,
+    next_payment_interval: paymentType.value === 'recurring'
+      ? recurringPaymentInterval.value
+      : null,
+    next_payment_interval_value: paymentType.value === 'recurring'
+      ? recurringPaymentCount.value
+      : null,
+  }
+
   if (editedItem.value) {
-    appStore.updateFinanceItem({
-      id: editedItem.value.id,
-      name: name.value,
-      amount: amount.value,
-      date: date.value,
-      category: category.value as categories,
-      nextPayment,
-    })
+    appStore.updateFinanceItem(financeObject)
   }
   else {
-    appStore.addFinanceItem({
-      id: '',
-      name: name.value,
-      amount: amount.value,
-      date: date.value,
-      category: category.value as categories,
-      nextPayment,
-    })
+    appStore.addFinanceItem(financeObject)
   }
 
   close()

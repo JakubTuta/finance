@@ -1,10 +1,12 @@
 export interface FinanceItem {
-  id: string
+  id: string | null
   name: string
   amount: number
   category: categories
   date: Date | string
-  nextPayment: Date | string | null
+  next_payment: Date | string | null
+  next_payment_interval: string | null
+  next_payment_interval_value: number | null
 }
 
 export const useAppStore = defineStore('app', () => {
@@ -20,9 +22,11 @@ export const useAppStore = defineStore('app', () => {
       amount: item.amount,
       category: item.category,
       date: new Date(item.date),
-      nextPayment: item.nextPayment
-        ? new Date(item.nextPayment)
+      next_payment: item.next_payment
+        ? new Date(item.next_payment)
         : null,
+      next_payment_interval: item.next_payment_interval,
+      next_payment_interval_value: item.next_payment_interval_value,
     }
   }
 

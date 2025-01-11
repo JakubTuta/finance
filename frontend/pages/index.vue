@@ -180,7 +180,7 @@ function openDialog(item: FinanceItem | null) {
 
           <v-col
             v-for="item in itemsInDate.items"
-            :key="item.id"
+            :key="item.id || ''"
             cols="12"
             sm="4"
             md="3"

@@ -14,18 +14,19 @@ class FinanceItem(pydantic.BaseModel):
         - amount (float): Amount of the expense.
         - date (datetime.datetime): Date of the expense.
         - category (str): Category of the expense.
+        - next_payment (Optional[datetime.datetime]): Next payment date. Defaults to None.
+        - next_payment_interval (Optional[str]): Interval for the next payment. Defaults to None.
+        - next_payment_interval_value (Optional[int]): Value for the next payment interval. Defaults to None.
     """
 
-    id: typing.Optional[str] = pydantic.Field(
-        default=None, description="Unique identifier"
-    )
-    name: str = pydantic.Field(description="Name of the expense")
-    amount: float = pydantic.Field(description="Amount of the expense")
-    date: datetime.datetime = pydantic.Field(description="Date of the expense")
-    category: str = pydantic.Field(description="Category of the expense")
-    next_payment: typing.Optional[datetime.datetime] = pydantic.Field(
-        description="Next payment date", default=None
-    )
+    id: typing.Optional[str] = pydantic.Field(default=None)
+    name: str
+    amount: float
+    date: datetime.datetime
+    category: str
+    next_payment: typing.Optional[datetime.datetime] = pydantic.Field(default=None)
+    next_payment_interval: typing.Optional[str] = pydantic.Field(default=None)
+    next_payment_interval_value: typing.Optional[int] = pydantic.Field(default=None)
 
     @staticmethod
     def from_doc(doc) -> "FinanceItem":
@@ -36,6 +37,8 @@ class FinanceItem(pydantic.BaseModel):
             date=doc.get("date", datetime.datetime.now()),
             category=doc.get("category", ""),
             next_payment=doc.get("next_payment", None),
+            next_payment_interval=doc.get("next_payment_interval", None),
+            next_payment_interval_value=doc.get("next_payment_interval_value", None),
         )
 
     @pydantic.field_validator("date", mode="before")
@@ -86,7 +89,10 @@ class FinanceItemWrapper:
         end_of_day = datetime.datetime(now.year, now.month, now.day, 23, 59, 59)
 
         cursor = self.collection.find(
-            {"next_payment": {"$gte": start_of_day, "$lte": end_of_day}}
+            {
+                "next_payment": {"$gte": start_of_day, "$lte": end_of_day},
+                "next_payment": {"$ne": None},
+            }
         )
 
         async for doc in cursor:
