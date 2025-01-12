@@ -3,6 +3,7 @@ import os
 
 import dotenv
 import fastapi
+from calendarSummary import router as calendar_router
 from fastapi.middleware.cors import CORSMiddleware
 from finances import router as finances_router
 from models import FinanceItemWrapper
@@ -55,6 +56,7 @@ app.add_middleware(
 
 routers = [
     finances_router,
+    calendar_router,
 ]
 
 for router in routers:

@@ -156,7 +156,10 @@ function positiveIntRule(value: number, fieldName: string) {
             label="Date"
             :model-value="dateToString(date)"
           >
-            <v-menu activator="parent">
+            <v-menu
+              activator="parent"
+              :close-on-content-click="false"
+            >
               <v-card max-width="350">
                 <v-card-text>
                   <v-date-picker

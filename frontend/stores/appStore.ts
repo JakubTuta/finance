@@ -14,6 +14,7 @@ export const useAppStore = defineStore('app', () => {
   const { api } = storeToRefs(apiStore)
 
   const financeItems = ref<FinanceItem[]>([])
+  const summaryItems = ref<{ [key: string]: { [key: string]: number } }>({})
 
   const mapFinanceItem = (item: any): FinanceItem => {
     return {
@@ -87,11 +88,39 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  const getCalendarSummary = async (date: Date) => {
+    const year = date.getFullYear()
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const key = `${year}-${month}`
+
+    if (summaryItems.value[key]) {
+      return
+    }
+
+    const startDate = startOfMonth(date)
+    const endDate = endOfMonth(date)
+
+    const url = `/calendar?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+
+    try {
+      const response = await api.value.get(url)
+
+      if (response.status === 200) {
+        summaryItems.value[key] = response.data
+      }
+    }
+    catch (error) {
+      console.error(error)
+    }
+  }
+
   return {
     financeItems,
+    summaryItems,
     fetchFinanceItems,
     addFinanceItem,
     updateFinanceItem,
     deleteFinanceItem,
+    getCalendarSummary,
   }
 })

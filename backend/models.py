@@ -137,3 +137,15 @@ class FinanceItemWrapper:
         response = await self.collection.delete_one({"_id": item_id})
 
         return response.deleted_count == 1
+
+    async def is_unique(self, item: typing.Dict[str, typing.Union[str, float]]) -> bool:
+        query = {
+            "name": item["name"],
+            "amount": item["amount"],
+            "date": item["date"],
+            "category": item["category"],
+        }
+
+        doc = await self.collection.find_one(query)
+
+        return doc is None

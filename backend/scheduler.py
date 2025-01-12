@@ -57,6 +57,7 @@ class Scheduler:
                     "next_payment_interval_value": payment.next_payment_interval_value,
                 }
 
-            self.wrapper.create_item(item_data)
+            if await self.wrapper.is_unique(item_data):
+                await self.wrapper.create_item(item_data)
 
         await asyncio.sleep(60 * 60 * 24)
