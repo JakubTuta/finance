@@ -4,17 +4,15 @@ export interface FinanceItem {
   amount: number
   category: categories
   date: Date | string
-  next_payment: Date | string | null
-  next_payment_interval: string | null
-  next_payment_interval_value: number | null
 }
 
 export const useAppStore = defineStore('app', () => {
-  const apiStore = useApiStore()
-  const { api } = storeToRefs(apiStore)
-
+  const loading = ref(false)
   const financeItems = ref<FinanceItem[]>([])
   const summaryItems = ref<{ [key: string]: { [key: string]: number } }>({})
+
+  const apiStore = useApiStore()
+  const { api } = storeToRefs(apiStore)
 
   const mapFinanceItem = (item: any): FinanceItem => {
     return {
@@ -23,15 +21,12 @@ export const useAppStore = defineStore('app', () => {
       amount: item.amount,
       category: item.category,
       date: new Date(item.date),
-      next_payment: item.next_payment
-        ? new Date(item.next_payment)
-        : null,
-      next_payment_interval: item.next_payment_interval,
-      next_payment_interval_value: item.next_payment_interval_value,
     }
   }
 
   const fetchFinanceItems = async (startDate: Date, endDate: Date) => {
+    loading.value = true
+
     const url = `/items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
 
     try {
@@ -44,22 +39,43 @@ export const useAppStore = defineStore('app', () => {
     catch (error) {
       console.error(error)
     }
+
+    loading.value = false
   }
 
-  const addFinanceItem = async (item: FinanceItem) => {
+  const addFinanceItem = async (
+    item: FinanceItem,
+    repeatPeriod: string | null = null,
+    repeatValue: number | null = null,
+  ) => {
+    loading.value = true
+
+    const urlParams = new URLSearchParams()
+
+    if (repeatPeriod)
+      urlParams.append('repeatPeriod', repeatPeriod)
+
+    if (repeatValue)
+      urlParams.append('repeatValue', repeatValue.toString())
+
     try {
-      const response = await api.value.post('/items', item)
+      const url = `/items?${urlParams.toString()}`
+      const response = await api.value.post(url, item)
 
       if (response.status === 201) {
-        financeItems.value.push(mapFinanceItem(response.data))
+        financeItems.value.push(...response.data.map(mapFinanceItem))
       }
     }
     catch (error) {
       console.error(error)
     }
+
+    loading.value = false
   }
 
   const updateFinanceItem = async (item: FinanceItem) => {
+    loading.value = true
+
     try {
       const response = await api.value.put(`/items/${item.id}`, item)
 
@@ -71,9 +87,13 @@ export const useAppStore = defineStore('app', () => {
     catch (error) {
       console.error(error)
     }
+
+    loading.value = false
   }
 
   const deleteFinanceItem = async (item: FinanceItem) => {
+    loading.value = true
+
     const id = item.id
 
     try {
@@ -86,9 +106,13 @@ export const useAppStore = defineStore('app', () => {
     catch (error) {
       console.error(error)
     }
+
+    loading.value = false
   }
 
   const getCalendarSummary = async (date: Date) => {
+    loading.value = true
+
     const year = date.getFullYear()
     const month = (date.getMonth() + 1).toString().padStart(2, '0')
     const key = `${year}-${month}`
@@ -112,9 +136,12 @@ export const useAppStore = defineStore('app', () => {
     catch (error) {
       console.error(error)
     }
+
+    loading.value = false
   }
 
   return {
+    loading,
     financeItems,
     summaryItems,
     fetchFinanceItems,

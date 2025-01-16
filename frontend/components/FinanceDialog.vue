@@ -15,8 +15,8 @@ const date = ref(new Date())
 const category = ref<string | null>(null)
 const valid = ref(false)
 const paymentType = ref('one-time')
-const recurringPaymentCount = ref(1)
-const recurringPaymentInterval = ref('day')
+const repeatPeriod = ref('day')
+const repeatValue = ref(1)
 
 const categoryItems = Object.entries(mapCategories).map(([key, value]) => ({ title: value, value: key }))
 
@@ -28,23 +28,18 @@ watch(editedItem, (newValue) => {
   amount.value = newValue.amount
   date.value = new Date(newValue.date)
   category.value = newValue.category
-  paymentType.value = newValue.next_payment
-    ? 'recurring'
-    : 'one-time'
-  recurringPaymentCount.value = newValue.next_payment_interval_value || 1
-  recurringPaymentInterval.value = newValue.next_payment_interval || 'day'
 }, { immediate: true })
 
 function close() {
   isShow.value = false
   name.value = ''
-  amount.value = 0
+  amount.value = null
   date.value = new Date()
-  category.value = ''
+  category.value = null
   valid.value = false
   paymentType.value = 'one-time'
-  recurringPaymentCount.value = 1
-  recurringPaymentInterval.value = 'day'
+  repeatValue.value = 1
+  repeatPeriod.value = 'day'
 }
 
 function save() {
@@ -54,44 +49,22 @@ function save() {
     return
   }
 
-  let nextPayment = null
-
-  if (paymentType.value === 'recurring') {
-    nextPayment = new Date(date.value)
-
-    switch (recurringPaymentInterval.value) {
-      case 'day':
-        nextPayment.setDate(nextPayment.getDate() + recurringPaymentCount.value)
-        break
-      case 'week':
-        nextPayment.setDate(nextPayment.getDate() + recurringPaymentCount.value * 7)
-        break
-      case 'month':
-        nextPayment.setMonth(nextPayment.getMonth() + recurringPaymentCount.value)
-        break
-    }
-  }
-
   const financeObject: FinanceItem = {
     id: editedItem.value?.id || null,
     name: name.value,
     amount: amount.value,
     date: date.value,
     category: category.value as categories,
-    next_payment: nextPayment,
-    next_payment_interval: paymentType.value === 'recurring'
-      ? recurringPaymentInterval.value
-      : null,
-    next_payment_interval_value: paymentType.value === 'recurring'
-      ? recurringPaymentCount.value
-      : null,
   }
 
   if (editedItem.value) {
     appStore.updateFinanceItem(financeObject)
   }
-  else {
+  else if (paymentType.value === 'one-time') {
     appStore.addFinanceItem(financeObject)
+  }
+  else {
+    appStore.addFinanceItem(financeObject, repeatPeriod.value, repeatValue.value)
   }
 
   close()
@@ -223,13 +196,13 @@ function positiveIntRule(value: number, fieldName: string) {
               sm="6"
             >
               <v-text-field
-                v-model.number="recurringPaymentCount"
+                v-model.number="repeatValue"
                 label="Count"
                 :rules="paymentType === 'one-time'
                   ? []
                   : [
-                    () => requiredRule(recurringPaymentCount, 'Count'),
-                    positiveIntRule(recurringPaymentCount, 'Count'),
+                    () => requiredRule(repeatValue, 'Count'),
+                    positiveIntRule(repeatValue, 'Count'),
                   ]"
               />
             </v-col>
@@ -239,7 +212,7 @@ function positiveIntRule(value: number, fieldName: string) {
               sm="6"
             >
               <v-select
-                v-model="recurringPaymentInterval"
+                v-model="repeatPeriod"
                 :items="[
                   'day',
                   'week',

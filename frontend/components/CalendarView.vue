@@ -1,10 +1,10 @@
 <script setup lang="ts">
+// @ts-expect-error import
 import { Qalendar } from 'qalendar'
 
 const appStore = useAppStore()
-const { summaryItems } = storeToRefs(appStore)
+const { summaryItems, loading } = storeToRefs(appStore)
 
-const loading = ref(false)
 const selectedDate = ref(new Date())
 
 const config = {
@@ -34,11 +34,7 @@ const events = computed(() => {
 })
 
 watch(selectedDate, async (newDate) => {
-  loading.value = true
-
   await appStore.getCalendarSummary(newDate)
-
-  loading.value = false
 }, { immediate: true })
 
 function findEvent(stringDate: string) {
@@ -71,7 +67,7 @@ function handleUpdatePeriod(data: { start: Date, end: Date }) {
       color="transparent"
     >
       <v-card-title>
-        Month total: {{ events.reduce((acc, event) => acc + event.title, 0) }} zł
+        Month total: {{ events.reduce((acc, event) => acc + event.title, 0).toFixed(2) }} zł
       </v-card-title>
 
       <v-card-text>

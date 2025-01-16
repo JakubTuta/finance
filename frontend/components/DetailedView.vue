@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const appStore = useAppStore()
-const { financeItems } = storeToRefs(appStore)
+const { financeItems, loading } = storeToRefs(appStore)
 
 const startDate = ref(startOfDay(addDays(new Date(), -30)))
 const endDate = ref(endOfDay(new Date()))
@@ -9,7 +9,6 @@ const isShowDialog = ref(false)
 const editedItem = ref<FinanceItem | null>(null)
 const search = ref('')
 const selectedCategory = ref<string | null>(null)
-const loading = ref(false)
 
 const isPositive = (amount: number) => amount >= 0
 
@@ -58,11 +57,7 @@ watch(selectedDates, (newValue) => {
 })
 
 watch([startDate, endDate], async ([start, end]) => {
-  loading.value = true
-
   await appStore.fetchFinanceItems(start, end)
-
-  loading.value = false
 }, { immediate: true })
 
 watch(isShowDialog, (newValue) => {

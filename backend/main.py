@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from finances import router as finances_router
 from models import FinanceItemWrapper
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
-from scheduler import Scheduler
 
 dotenv.load_dotenv()
 
@@ -27,11 +26,6 @@ async def database_lifespan(app: fastapi.FastAPI):
     collection = mongodb_database["Finances"]  # type: ignore
 
     app.wrapper = FinanceItemWrapper(collection)  # type: ignore
-
-    scheduler = Scheduler()
-    scheduler.start()
-
-    app.scheduler = scheduler  # type: ignore
 
     ping_response = await mongodb_database.command("ping")
     if not ping_response.get("ok"):
