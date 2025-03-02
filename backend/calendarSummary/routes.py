@@ -1,5 +1,7 @@
+import typing
+
 import fastapi
-import main
+import finances.models as finances_models
 
 router = fastapi.APIRouter(
     prefix="/calendar",
@@ -13,16 +15,18 @@ router = fastapi.APIRouter(
     response_model=dict[str, float],
     response_model_by_alias=False,
 )
-async def get_calendar_summary(startDate: str, endDate: str) -> dict[str, str]:
-    wrapper = main.app.wrapper  # type: ignore
-
-    if not startDate or not endDate:
+async def get_calendar_summary(
+    request: fastapi.Request,
+    startDate: typing.Optional[str] = None,
+    endDate: typing.Optional[str] = None,
+) -> dict[str, str]:
+    if startDate is None or endDate is None:
         raise fastapi.HTTPException(status_code=400, detail="Missing dates")
 
+    wrapper: finances_models.FinanceItemWrapper = request.app.wrapper
     generator = wrapper.list_items(startDate, endDate)
 
     summary = {}
-
     async for item in generator:
         string_date = item.date.strftime("%Y-%m-%d")
 

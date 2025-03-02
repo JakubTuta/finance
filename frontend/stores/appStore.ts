@@ -111,8 +111,6 @@ export const useAppStore = defineStore('app', () => {
   }
 
   const getCalendarSummary = async (date: Date) => {
-    loading.value = true
-
     const year = date.getFullYear()
     const month = (date.getMonth() + 1).toString().padStart(2, '0')
     const key = `${year}-${month}`
@@ -127,6 +125,7 @@ export const useAppStore = defineStore('app', () => {
     const url = `/calendar?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
 
     try {
+      loading.value = true
       const response = await api.value.get(url)
 
       if (response.status === 200) {
@@ -136,8 +135,9 @@ export const useAppStore = defineStore('app', () => {
     catch (error) {
       console.error(error)
     }
-
-    loading.value = false
+    finally {
+      loading.value = false
+    }
   }
 
   return {

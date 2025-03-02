@@ -1,8 +1,8 @@
 import typing
 
 import fastapi
-import main
-import models
+
+from . import models
 
 router = fastapi.APIRouter(
     prefix="/items",
@@ -12,13 +12,15 @@ router = fastapi.APIRouter(
 @router.get(
     "/",
     response_description="List all finance items",
-    response_model=list[models.FinanceItem],
+    response_model=typing.List[models.FinanceItem],
     status_code=200,
 )
 async def list_finance_items(
-    startDate: typing.Union[str, None] = None, endDate: typing.Union[str, None] = None
+    request: fastapi.Request,
+    startDate: typing.Optional[str] = None,
+    endDate: typing.Optional[str] = None,
 ) -> list[models.FinanceItem]:
-    wrapper = main.app.wrapper  # type: ignore
+    wrapper: models.FinanceItemWrapper = request.app.state.wrapper
 
     generator = wrapper.list_items(startDate, endDate)
 
@@ -30,15 +32,15 @@ async def list_finance_items(
 @router.get(
     "/{item_id}",
     response_description="Get a finance item",
-    response_model=list[models.FinanceItem],
+    response_model=typing.List[models.FinanceItem],
     status_code=200,
 )
-async def get_finance_item(item_id: str) -> models.FinanceItem:
-    wrapper = main.app.wrapper  # type: ignore
+async def get_finance_item(
+    request: fastapi.Request, item_id: str
+) -> models.FinanceItem:
+    wrapper: models.FinanceItemWrapper = request.app.state.wrapper
 
-    try:
-        item = await wrapper.get_item(item_id)
-    except ValueError:
+    if (item := await wrapper.get_item(item_id)) is None:
         raise fastapi.HTTPException(status_code=404, detail="Item not found")
 
     return item
@@ -59,7 +61,7 @@ async def create_finance_item(
     request_data = await request.json()
     finance_item = models.FinanceItem(**request_data)
 
-    wrapper = main.app.wrapper  # type: ignore
+    wrapper: models.FinanceItemWrapper = request.app.state.wrapper
 
     if repeatPeriod and repeatValue and repeatAmount:
         finance_items: list[models.FinanceItem] = await wrapper.create_repetitive_item(
@@ -81,12 +83,12 @@ async def create_finance_item(
     status_code=200,
 )
 async def update_finance_item(
-    item_id: str, request: fastapi.Request
+    request: fastapi.Request, item_id: str
 ) -> models.FinanceItem:
     request_data = await request.json()
     finance_item = models.FinanceItem(**request_data)
 
-    wrapper = main.app.wrapper  # type: ignore
+    wrapper: models.FinanceItemWrapper = request.app.state.wrapper
 
     is_updated: bool = await wrapper.update_item(item_id, finance_item.model_dump())
 
@@ -99,12 +101,13 @@ async def update_finance_item(
 @router.delete(
     "/{item_id}",
     response_description="Delete a finance item",
-    response_model=bool,
+    response_model=str,
     status_code=200,
 )
-async def delete_finance_item(item_id: str) -> bool:
-    wrapper = main.app.wrapper  # type: ignore
+async def delete_finance_item(request: fastapi.Request, item_id: str) -> str:
+    wrapper: models.FinanceItemWrapper = request.app.state.wrapper
 
-    is_deleted = await wrapper.delete_item(item_id)
+    if await wrapper.delete_item(item_id):
+        return item_id
 
-    return is_deleted
+    raise fastapi.HTTPException(status_code=404, detail="Item not found")

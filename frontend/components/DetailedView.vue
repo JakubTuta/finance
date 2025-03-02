@@ -5,6 +5,8 @@ const { financeItems, loading } = storeToRefs(appStore)
 const startDate = ref(startOfDay(addDays(new Date(), -30)))
 const endDate = ref(endOfDay(new Date()))
 const selectedDates = ref<Date[]>(populateSelectedDates())
+const selectedMonth = ref(new Date().getMonth())
+const selectedYear = ref(new Date().getFullYear())
 const isShowDialog = ref(false)
 const editedItem = ref<FinanceItem | null>(null)
 const search = ref('')
@@ -81,6 +83,36 @@ function openDialog(item: FinanceItem | null) {
   editedItem.value = item
   isShowDialog.value = true
 }
+
+function selectLast30Days() {
+  startDate.value = startOfDay(addDays(new Date(), -30))
+  endDate.value = endOfDay(new Date())
+
+  selectedDates.value = populateSelectedDates()
+}
+
+function selectLast7Days() {
+  startDate.value = startOfDay(addDays(new Date(), -7))
+  endDate.value = endOfDay(new Date())
+
+  selectedDates.value = populateSelectedDates()
+}
+
+function selectThisMonth() {
+  const selectedDate = new Date(selectedYear.value, selectedMonth.value, 1)
+  startDate.value = startOfMonth(selectedDate)
+  endDate.value = endOfMonth(selectedDate)
+
+  selectedDates.value = populateSelectedDates()
+}
+
+function onMonthChange(newMonth: number) {
+  selectedMonth.value = newMonth
+}
+
+function onYearChange(newYear: number) {
+  selectedYear.value = newYear
+}
 </script>
 
 <template>
@@ -105,14 +137,40 @@ function openDialog(item: FinanceItem | null) {
                   v-model="selectedDates"
                   :year="new Date().getFullYear()"
                   :month="new Date().getMonth()"
-                  color="primary"
                   :first-day-of-week="1"
+                  color="primary"
                   width="100%"
                   hide-header
                   landscape
                   multiple="range"
+                  show-adjacent-months
+                  @update:month="onMonthChange"
+                  @update:year="onYearChange"
                 />
               </v-card-text>
+
+              <v-card-actions>
+                <v-btn
+                  size="small"
+                  @click="selectLast30Days"
+                >
+                  Last 30 days
+                </v-btn>
+
+                <v-btn
+                  size="small"
+                  @click="selectLast7Days"
+                >
+                  Last 7 days
+                </v-btn>
+
+                <v-btn
+                  size="small"
+                  @click="selectThisMonth"
+                >
+                  This month
+                </v-btn>
+              </v-card-actions>
             </v-card>
           </v-menu>
         </div>

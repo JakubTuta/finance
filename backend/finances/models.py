@@ -8,15 +8,6 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 
 
 class FinanceItem(pydantic.BaseModel):
-    """
-    FinanceItem represents an expense item with the following attributes:
-        - id (Optional[str]): Unique identifier for the expense item. Defaults to None.
-        - name (str): Name of the expense.
-        - amount (float): Amount of the expense.
-        - date (datetime.datetime): Date of the expense.
-        - category (str): Category of the expense.
-    """
-
     id: typing.Optional[str] = pydantic.Field(default=None)
     name: str
     amount: float
@@ -42,7 +33,7 @@ class FinanceItem(pydantic.BaseModel):
 
 class FinanceItemWrapper:
     def __init__(self, collection: AsyncIOMotorCollection):
-        self.collection: AsyncIOMotorCollection = collection
+        self.collection = collection
 
     async def list_items(
         self,
@@ -77,7 +68,7 @@ class FinanceItemWrapper:
         doc = await self.collection.find_one({"_id": item_id})
 
         if doc is None:
-            raise ValueError("Item not found")
+            return None
 
         return FinanceItem.from_doc(doc)
 

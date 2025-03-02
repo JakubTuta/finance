@@ -1,43 +1,36 @@
 import contextlib
-import os
 
 import dotenv
 import fastapi
-from calendarSummary import router as calendar_router
+from auth.routes import router as auth_router
+from calendarSummary.routes import router as calendar_router
 from fastapi.middleware.cors import CORSMiddleware
-from finances import router as finances_router
-from models import FinanceItemWrapper
-from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
+from finances.models import FinanceItemWrapper
+from finances.routes import router as finances_router
+from helpers import database
 
 dotenv.load_dotenv()
 
 
 @contextlib.asynccontextmanager
 async def database_lifespan(app: fastapi.FastAPI):
-    IS_DOCKER = os.getenv("DOCKER", "false").lower() == "true"
-    DATABASE_URL = (
-        os.getenv("DOCKER_DATABASE_HOST")
-        if IS_DOCKER
-        else os.getenv("LOCAL_DATABASE_HOST")
-    )
-
-    mongodb_client: AsyncIOMotorClient = AsyncIOMotorClient(DATABASE_URL)
-    mongodb_database: AsyncIOMotorDatabase = mongodb_client[os.getenv("DATABASE_NAME")]  # type: ignore
-    collection = mongodb_database["Finances"]  # type: ignore
-
-    app.wrapper = FinanceItemWrapper(collection)  # type: ignore
+    mongodb_client, mongodb_database = database.init_database()
 
     ping_response = await mongodb_database.command("ping")
     if not ping_response.get("ok"):
         raise Exception("Database connection failed")
 
+    finance_collection = database.get_collection("finances")
+    finance_wrapper = FinanceItemWrapper(finance_collection)
+    app.state.finance_wrapper = finance_wrapper
+
     yield
 
-    mongodb_client.close()  # type: ignore
+    mongodb_client.close()
 
 
 app = fastapi.FastAPI(
-    lifespan=database_lifespan,  # type: ignore
+    lifespan=database_lifespan,
 )
 
 app.add_middleware(
@@ -51,6 +44,7 @@ app.add_middleware(
 routers = [
     finances_router,
     calendar_router,
+    auth_router,
 ]
 
 for router in routers:
