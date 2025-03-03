@@ -42,7 +42,7 @@ export default defineNuxtPlugin((app) => {
         variant: 'outlined',
       },
       VContainer: {
-        style: 'max-width: 1600px',
+        style: 'max-width: 1400px',
       },
       VCard: {
         rounded: 'lg',

@@ -5,17 +5,16 @@ from bson import ObjectId
 
 
 class RefreshRequest(pydantic.BaseModel):
-    refresh_token: str
+    refresh: str
 
 
 class TokenPair(pydantic.BaseModel):
-    access_token: str
-    refresh_token: str
+    access: str
+    refresh: str
 
 
 class TokenData(pydantic.BaseModel):
-    user_id: str
-    username: str
+    sub: str
     token_type: typing.Literal["access", "refresh"]
     exp: typing.Optional[int] = None  # Unix timestamp
 
@@ -38,7 +37,9 @@ class User(pydantic.BaseModel):
     password: str
 
     model_config = pydantic.ConfigDict(
-        arbitrary_types_allowed=True, json_encoders={ObjectId: str}
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str},
+        populate_by_name=True,
     )
 
     def model_dump(self, **kwargs):

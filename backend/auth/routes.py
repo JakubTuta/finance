@@ -1,7 +1,7 @@
 import typing
 
 import fastapi
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 
 from . import functions, models
 
@@ -11,6 +11,8 @@ router = fastapi.APIRouter(prefix="/auth")
 @router.post(
     "/login",
     response_model=typing.Dict[str, typing.Union[models.User, models.TokenPair]],
+    response_model_exclude={"user": {"password"}},
+    response_model_by_alias=False,
 )
 async def login(
     form_data: OAuth2PasswordRequestForm = fastapi.Depends(),
@@ -30,6 +32,7 @@ async def login(
         raise fastapi.HTTPException(status_code=500, detail="Failed to generate tokens")
 
     return {
+        "user": user,
         "tokens": token_pair,
     }
 
@@ -37,6 +40,8 @@ async def login(
 @router.post(
     "/register",
     response_model=typing.Dict[str, typing.Union[models.User, models.TokenPair]],
+    response_model_exclude={"user": {"password"}},
+    response_model_by_alias=False,
 )
 async def register(
     form_data: OAuth2PasswordRequestForm = fastapi.Depends(),
@@ -55,6 +60,7 @@ async def register(
         raise fastapi.HTTPException(status_code=500, detail="Failed to generate tokens")
 
     return {
+        "user": user,
         "tokens": token_pair,
     }
 
@@ -63,13 +69,13 @@ async def register(
 async def refresh_token(
     refresh_data: models.RefreshRequest,
 ) -> models.TokenPair:
-    refresh_token = refresh_data.refresh_token
+    refresh_token = refresh_data.refresh
 
     if functions.is_refresh_token_expired(refresh_token):
         raise fastapi.HTTPException(status_code=400, detail="Refresh token expired")
 
     payload = functions.decode_token(refresh_token, "refresh")
-    user = await functions.find_user(user_id=payload["sub"]["user_id"])
+    user = await functions.find_user(user_id=payload["sub"])
 
     if user is None:
         raise fastapi.HTTPException(status_code=400, detail="User not found")
@@ -80,3 +86,15 @@ async def refresh_token(
         raise fastapi.HTTPException(status_code=500, detail="Failed to generate tokens")
 
     return token_pair
+
+
+@router.get(
+    "/me",
+    response_model=models.User,
+    response_model_exclude={"password"},
+    response_model_by_alias=False,
+)
+async def get_current_user(
+    user: models.User = fastapi.Depends(functions.get_current_user),
+) -> models.User:
+    return user

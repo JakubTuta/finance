@@ -1,3 +1,11 @@
+<script setup lang="ts">
+const authStore = useAuthStore()
+
+onMounted(() => {
+  authStore.init()
+})
+</script>
+
 <template>
   <NuxtLayout>
     <v-app>

@@ -5,6 +5,17 @@ export default defineNuxtConfig({
   app: {
     head: {
       title: 'Finance',
+      meta: [
+        { name: 'description', content: 'A smart money management app that helps you track your spending and income. Powered by AI to identify savings opportunities and improve your financial health.' },
+      ],
+    },
+  },
+
+  runtimeConfig: {
+    public: {
+      SERVER_URL: process.env.DOCKER === 'true'
+        ? 'http://host.docker.internal:8000'
+        : 'http://localhost:8000',
     },
   },
 
@@ -31,6 +42,8 @@ export default defineNuxtConfig({
     dirs: [
       'stores/**',
       'constants/**',
+      'components/**',
+      'helpers/**',
       'utils/**',
     ],
   },
@@ -43,34 +56,14 @@ export default defineNuxtConfig({
     },
   },
 
-  runtimeConfig: {
-    public: {
-      isDocker: process.env.DOCKER === 'true',
-      serverUrl: process.env.DOCKER === 'true'
-        ? 'http://host.docker.internal:8000'
-        : 'http://localhost:8000',
-    },
-  },
-
   ssr: false,
 
   nitro: {
-    preset: 'node-server',
+    preset: 'static',
+    firebase: {
+      gen: 2,
+    },
   },
-
-  // nitro: {
-  //   static: true,
-  //   esbuild: {
-  //     options: {
-  //       target: 'esnext',
-  //     },
-  //   },
-  //   prerender: {
-  //     crawlLinks: true,
-  //     routes: ['/'],
-  //     failOnError: false,
-  //   },
-  // },
 
   typescript: {
     strict: true,

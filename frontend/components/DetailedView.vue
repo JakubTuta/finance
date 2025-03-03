@@ -140,10 +140,12 @@ function onYearChange(newYear: number) {
                   :first-day-of-week="1"
                   color="primary"
                   width="100%"
-                  hide-header
-                  landscape
+
                   multiple="range"
+
+                  landscape
                   show-adjacent-months
+                  hide-header
                   @update:month="onMonthChange"
                   @update:year="onYearChange"
                 />

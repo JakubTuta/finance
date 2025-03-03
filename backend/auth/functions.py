@@ -2,6 +2,8 @@ import datetime
 import os
 import typing
 
+import bson
+import fastapi
 from fastapi.security import OAuth2PasswordBearer
 from helpers import database
 from jose import JWTError, jwt
@@ -35,25 +37,25 @@ def _generate_token(
     expire_hours: int,
     user: typing.Optional[models.User] = None,
     user_id: typing.Optional[str] = None,
-    username: typing.Optional[str] = None,
 ) -> typing.Optional[str]:
     if secret_key is None:
         return None
 
     if user is not None and user.id is not None:
-        user_id, username = user.id, user.username
-    elif not (user_id and username):
+        user_id = str(user.id)
+
+    elif user_id is None:
         return None
 
     expires = datetime.datetime.now() + datetime.timedelta(hours=expire_hours)
-    token_data = models.TokenData(
-        user_id=user_id,
-        username=username,
-        token_type=token_type,
-        exp=int(expires.timestamp()),
-    )
 
-    return jwt.encode({"sub": token_data.model_dump()}, secret_key, algorithm=ALGORITHM)
+    payload = {
+        "sub": str(user_id),
+        "token_type": token_type,
+        "exp": int(expires.timestamp()),
+    }
+
+    return jwt.encode(payload, secret_key, algorithm=ALGORITHM)
 
 
 def generate_access_token(**kwargs) -> typing.Optional[str]:
@@ -75,7 +77,7 @@ def generate_tokens(**kwargs) -> typing.Optional[models.TokenPair]:
     if access_token is None or refresh_token is None:
         return None
 
-    return models.TokenPair(access_token=access_token, refresh_token=refresh_token)
+    return models.TokenPair(access=access_token, refresh=refresh_token)
 
 
 # REFRESH TOKEN
@@ -89,14 +91,12 @@ def refresh_access_token(refresh_token: str) -> typing.Optional[str]:
         return None
 
     payload = jwt.decode(refresh_token, REFRESH_SECRET_KEY, algorithms=[ALGORITHM])
-    token_data = models.TokenData(**payload["sub"])
+    user_id = payload.get("sub")
 
-    if token_data.user_id is None or token_data.username is None:
+    if user_id is None:
         return None
 
-    return generate_access_token(
-        user_id=token_data.user_id, username=token_data.username
-    )
+    return generate_access_token(user_id=user_id)
 
 
 # DECODE TOKENS
@@ -126,16 +126,19 @@ def verify_token(token: str, token_type: typing.Literal["access", "refresh"]) ->
         return False
 
     try:
-        payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
-        token_data = models.TokenData(**payload["sub"])
+        payload = jwt.decode(token, secret_key, algorithms=ALGORITHM)
+
+        exp = payload.get("exp")
+        current_time = int(datetime.datetime.now().timestamp())
 
         return (
-            token_data.token_type == token_type
-            and token_data.user_id is not None
-            and token_data.username is not None
+            payload.get("token_type") == token_type
+            and payload.get("sub") is not None
+            and exp is not None
+            and exp > current_time
         )
 
-    except JWTError:
+    except JWTError as e:
         return False
 
 
@@ -160,12 +163,12 @@ def is_token_expired(
 
     try:
         payload = jwt.decode(token, secret_key, algorithms=[ALGORITHM])
-        token_data = models.TokenData(**payload["sub"])
+        exp = payload.get("exp")
 
-        if token_data.exp is None:
+        if exp is None:
             return True
 
-        return token_data.exp < int(datetime.datetime.now().timestamp())
+        return exp < int(datetime.datetime.now().timestamp())
 
     except JWTError:
         return True
@@ -186,12 +189,12 @@ async def find_user(
     user_id: typing.Optional[str] = None, username: typing.Optional[str] = None
 ) -> typing.Optional[models.User]:
     collection = database.get_collection("users")
+    print(user_id)
+    if user_id is not None:
+        user = await collection.find_one({"_id": bson.ObjectId(user_id)})
 
-    if username is not None:
+    elif username is not None:
         user = await collection.find_one({"username": username})
-
-    elif user_id is not None:
-        user = await collection.find_one({"_id": user_id})
 
     else:
         return None
@@ -210,5 +213,20 @@ async def create_user(username: str, password: str) -> models.User:
     result = await collection.insert_one(user.model_dump())
 
     user.id = result.inserted_id
+
+    return user
+
+
+async def get_current_user(
+    token: str = fastapi.Depends(OAuth2PasswordBearer(tokenUrl="/auth/token")),
+) -> models.User:
+    if not verify_access_token(token):
+        raise fastapi.HTTPException(status_code=401, detail="Invalid token")
+
+    payload = decode_token(token, "access")
+    user_id = str(payload.get("sub"))
+
+    if (user := await find_user(user_id=user_id)) is None:
+        raise fastapi.HTTPException(status_code=401, detail="User not found")
 
     return user

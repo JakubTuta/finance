@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { IFinanceItem } from '~/models/Finance'
+
 const props = defineProps<{
-  editedItem: FinanceItem | null
+  editedItem: IFinanceItem | null
 }>()
 
 const { editedItem } = toRefs(props)
@@ -14,7 +16,7 @@ const amount = ref<number | null>(null)
 const date = ref(new Date())
 const category = ref<string | null>(null)
 const valid = ref(false)
-const paymentType = ref('one-time')
+const paymentType = ref<'one-time' | 'recurring'>('one-time')
 const repeatPeriod = ref('day')
 const repeatValue = ref(1)
 
@@ -49,7 +51,7 @@ function save() {
     return
   }
 
-  const financeObject: FinanceItem = {
+  const financeObject: IFinanceItem = {
     id: editedItem.value?.id || null,
     name: name.value,
     amount: amount.value,
@@ -79,7 +81,7 @@ function numberRule(value: any, fieldName: string) {
 }
 
 function positiveIntRule(value: number, fieldName: string) {
-  return Number.isInteger(value) && value > 0 || `${fieldName} must be a positive integer`
+  return (Number.isInteger(value) && value > 0) || `${fieldName} must be a positive integer`
 }
 </script>
 
@@ -142,8 +144,9 @@ function positiveIntRule(value: number, fieldName: string) {
                     color="primary"
                     :first-day-of-week="1"
                     width="100%"
-                    hide-header
+
                     landscape
+                    hide-header
                   />
                 </v-card-text>
               </v-card>
@@ -198,12 +201,10 @@ function positiveIntRule(value: number, fieldName: string) {
               <v-text-field
                 v-model.number="repeatValue"
                 label="Count"
-                :rules="paymentType === 'one-time'
-                  ? []
-                  : [
-                    () => requiredRule(repeatValue, 'Count'),
-                    positiveIntRule(repeatValue, 'Count'),
-                  ]"
+                :rules="[
+                  requiredRule(repeatValue, 'Count'),
+                  positiveIntRule(repeatValue, 'Count'),
+                ]"
               />
             </v-col>
 
