@@ -48,6 +48,7 @@ def init_database():
     mongodb_database = mongodb_client.get_database(DATABASE_NAME)
 
     collections = [
+        "users",
         "finances",
         "subscriptions",
     ]

@@ -189,7 +189,6 @@ async def find_user(
     user_id: typing.Optional[str] = None, username: typing.Optional[str] = None
 ) -> typing.Optional[models.User]:
     collection = database.get_collection("users")
-    print(user_id)
     if user_id is not None:
         user = await collection.find_one({"_id": bson.ObjectId(user_id)})
 

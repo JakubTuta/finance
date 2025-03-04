@@ -1,6 +1,6 @@
 import type { AxiosResponse } from 'axios'
-import type { IUser } from '~/models/User'
 import { jwtDecode } from 'jwt-decode'
+import type { IUser } from '~/models/User'
 import { mapUser } from '~/models/User'
 import { useUserStore } from './user'
 
@@ -150,7 +150,6 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const init = async () => {
-    clearAuth()
     const tokenValid = await isTokenValid()
 
     if (!tokenValid) {
