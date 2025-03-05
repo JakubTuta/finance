@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { IFinanceItem } from '~/models/Finance'
+import { requiredRule } from '~/composables/rules';
+import type { IFinanceItem } from '~/models/Finance';
 
 const props = defineProps<{
   editedItem: IFinanceItem | null
@@ -71,18 +72,6 @@ function save() {
 
   close()
 }
-
-function requiredRule(value: string | number | null, fieldName: string) {
-  return !!value || `${fieldName} is required`
-}
-
-function numberRule(value: any, fieldName: string) {
-  return /^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(value) || `${fieldName} must be a valid number`
-}
-
-function positiveIntRule(value: number, fieldName: string) {
-  return (Number.isInteger(value) && value > 0) || `${fieldName} must be a positive integer`
-}
 </script>
 
 <template>
@@ -111,7 +100,7 @@ function positiveIntRule(value: number, fieldName: string) {
             class="mb-4"
             label="Name"
             required
-            :rules="[() => requiredRule(name, 'Name')]"
+            :rules="[requiredRule('Name')]"
           />
 
           <v-text-field
@@ -120,8 +109,8 @@ function positiveIntRule(value: number, fieldName: string) {
             label="Amount"
             required
             :rules="[
-              () => requiredRule(amount, 'Amount'),
-              numberRule(amount, 'Amount'),
+              requiredRule('Amount'),
+              numberRule('Amount'),
             ]"
           />
 
@@ -159,7 +148,7 @@ function positiveIntRule(value: number, fieldName: string) {
             :items="categoryItems"
             label="Category"
             required
-            :rules="[() => requiredRule(category, 'Category')]"
+            :rules="[requiredRule('Category')]"
           />
 
           <span>
@@ -202,8 +191,8 @@ function positiveIntRule(value: number, fieldName: string) {
                 v-model.number="repeatValue"
                 label="Count"
                 :rules="[
-                  requiredRule(repeatValue, 'Count'),
-                  positiveIntRule(repeatValue, 'Count'),
+                  requiredRule('Count'),
+                  positiveIntRule('Count'),
                 ]"
               />
             </v-col>

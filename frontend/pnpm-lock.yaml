@@ -47,6 +47,9 @@ importers:
       axios:
         specifier: ^1.7.9
         version: 1.7.9
+      csv-parse:
+        specifier: ^5.6.0
+        version: 5.6.0
       eslint:
         specifier: ^9.17.0
         version: 9.17.0(jiti@2.4.2)
@@ -2140,6 +2143,9 @@ packages:
 
   csstype@3.1.3:
     resolution: {integrity: sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==}
+
+  csv-parse@5.6.0:
+    resolution: {integrity: sha512-l3nz3euub2QMg5ouu5U09Ew9Wf6/wQ8I++ch1loQ0ljmzhmfZYrH9fflS22i/PQEvsPvxCwxgz5q7UB8K1JO4Q==}
 
   db0@0.2.1:
     resolution: {integrity: sha512-BWSFmLaCkfyqbSEZBQINMVNjCVfrogi7GQ2RSy1tmtfK9OXlsup6lUMwLsqSD7FbAjD04eWFdXowSHHUp6SE/Q==}
@@ -7216,6 +7222,8 @@ snapshots:
       css-tree: 2.2.1
 
   csstype@3.1.3: {}
+
+  csv-parse@5.6.0: {}
 
   db0@0.2.1: {}
 

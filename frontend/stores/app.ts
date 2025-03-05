@@ -12,7 +12,7 @@ export const useAppStore = defineStore('app', () => {
   const fetchFinanceItems = async (startDate: Date, endDate: Date) => {
     loading.value = true
 
-    const url = `/items?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+    const url = `/finances?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
 
     const response = await apiStore.sendRequest({ url, method: 'GET' })
 
@@ -39,12 +39,12 @@ export const useAppStore = defineStore('app', () => {
     if (repeatValue)
       urlParams.append('repeatValue', repeatValue.toString())
 
-    const url = `/items?${urlParams.toString()}`
+    const url = `/finances?${urlParams.toString()}`
     const response = await apiStore.sendRequest({ url, method: 'POST', data: item })
 
     if (apiStore.isResponseOk(response)) {
       const responseObject = response as AxiosResponse
-      financeItems.value.push(...responseObject.data.map(mapFinanceItem))
+      financeItems.value.push(mapFinanceItem(responseObject.data))
     }
 
     loading.value = false
@@ -53,7 +53,7 @@ export const useAppStore = defineStore('app', () => {
   const updateFinanceItem = async (item: IFinanceItem) => {
     loading.value = true
 
-    const url = `/items/${item.id}`
+    const url = `/finances/${item.id}`
     const response = await apiStore.sendRequest({ url, method: 'PUT', data: item })
 
     if (apiStore.isResponseOk(response)) {
@@ -70,7 +70,7 @@ export const useAppStore = defineStore('app', () => {
 
     const id = item.id
 
-    const url = `/items/${id}`
+    const url = `/finances/${id}`
     const response = await apiStore.sendRequest({ url, method: 'DELETE' })
 
     if (apiStore.isResponseOk(response)) {
@@ -106,6 +106,20 @@ export const useAppStore = defineStore('app', () => {
     loading.value = false
   }
 
+  const uploadFile = async (formData: FormData | null) => {
+    if (!formData) {
+      return
+    }
+
+    loading.value = true
+
+    const url = '/finances/upload'
+
+    const response = await apiStore.sendRequest({ url, method: 'POST', data: formData, headers: { 'Content-Type': 'multipart/form-data' } })
+
+    loading.value = false
+  }
+
   return {
     loading,
     financeItems,
@@ -115,5 +129,6 @@ export const useAppStore = defineStore('app', () => {
     updateFinanceItem,
     deleteFinanceItem,
     getCalendarSummary,
+    uploadFile,
   }
 })

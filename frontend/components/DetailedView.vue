@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { IFinanceItem } from '~/models/Finance'
+
 const appStore = useAppStore()
 const { financeItems, loading } = storeToRefs(appStore)
 
@@ -8,21 +10,23 @@ const selectedDates = ref<Date[]>(populateSelectedDates())
 const selectedMonth = ref(new Date().getMonth())
 const selectedYear = ref(new Date().getFullYear())
 const isShowDialog = ref(false)
-const editedItem = ref<FinanceItem | null>(null)
+const editedItem = ref<IFinanceItem | null>(null)
 const search = ref('')
 const selectedCategory = ref<string | null>(null)
+const isOpenCSVReadDialog = ref(false)
+const isCalendarOpen = ref(false)
 
 const isPositive = (amount: number) => amount >= 0
 
 const filteredItems = computed(() => {
-  const filterByName = (item: FinanceItem) => {
+  const filterByName = (item: IFinanceItem) => {
     if (!search.value)
       return true
 
     return item.name.toLowerCase().includes(search.value.toLowerCase())
   }
 
-  const filterByCategory = (item: FinanceItem) => {
+  const filterByCategory = (item: IFinanceItem) => {
     if (!selectedCategory.value)
       return true
 
@@ -44,7 +48,7 @@ const itemsPerDate = computed(() => {
   }
 
   return dates.map((date) => {
-    const items = filteredItems.value.filter((item: FinanceItem) => isSameDay(new Date(item.date), date))
+    const items = filteredItems.value.filter(item => isSameDay(new Date(item.date), date))
 
     return { date, items }
   }).filter(({ items }) => items.length)
@@ -59,12 +63,23 @@ watch(selectedDates, (newValue) => {
 })
 
 watch([startDate, endDate], async ([start, end]) => {
-  await appStore.fetchFinanceItems(start, end)
+  if (!loading.value && !isCalendarOpen.value)
+    await appStore.fetchFinanceItems(start, end)
 }, { immediate: true })
 
 watch(isShowDialog, (newValue) => {
   if (!newValue)
     editedItem.value = null
+})
+
+watch(isCalendarOpen, (newValue) => {
+  if (newValue || !selectedDates.value.length)
+    return
+
+  startDate.value = startOfDay(selectedDates.value[0])
+  endDate.value = endOfDay(selectedDates.value[selectedDates.value.length - 1])
+
+  appStore.fetchFinanceItems(startDate.value, endDate.value)
 })
 
 function populateSelectedDates() {
@@ -79,7 +94,7 @@ function populateSelectedDates() {
   return dates
 }
 
-function openDialog(item: FinanceItem | null) {
+function openDialog(item: IFinanceItem | null) {
   editedItem.value = item
   isShowDialog.value = true
 }
@@ -113,6 +128,10 @@ function onMonthChange(newMonth: number) {
 function onYearChange(newYear: number) {
   selectedYear.value = newYear
 }
+
+function openCSVReadDialog() {
+  isOpenCSVReadDialog.value = true
+}
 </script>
 
 <template>
@@ -128,6 +147,7 @@ function onYearChange(newYear: number) {
             : `Dates: ${dateToString(startDate)} - ${dateToString(endDate)}` }}
 
           <v-menu
+            v-model="isCalendarOpen"
             activator="parent"
             :close-on-content-click="false"
           >
@@ -140,9 +160,7 @@ function onYearChange(newYear: number) {
                   :first-day-of-week="1"
                   color="primary"
                   width="100%"
-
                   multiple="range"
-
                   landscape
                   show-adjacent-months
                   hide-header
@@ -177,13 +195,24 @@ function onYearChange(newYear: number) {
           </v-menu>
         </div>
 
-        <v-btn
-          prepend-icon="mdi-plus"
-          color="primary"
-          @click="openDialog(null)"
-        >
-          Add new
-        </v-btn>
+        <div class="mt-1">
+          <v-btn
+            prepend-icon="mdi-file-delimited-outline"
+            color="primary"
+            @click="openCSVReadDialog"
+          >
+            Import from CSV
+          </v-btn>
+
+          <v-btn
+            class="ml-4"
+            prepend-icon="mdi-plus"
+            color="primary"
+            @click="openDialog(null)"
+          >
+            Add new
+          </v-btn>
+        </div>
       </v-row>
 
       <v-row>
@@ -288,5 +317,9 @@ function onYearChange(newYear: number) {
   <FinanceDialog
     v-model:is-show="isShowDialog"
     :edited-item="editedItem"
+  />
+
+  <ReadCSVDialog
+    v-model:is-show="isOpenCSVReadDialog"
   />
 </template>

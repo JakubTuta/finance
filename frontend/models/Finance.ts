@@ -6,7 +6,7 @@ export interface IFinanceItem {
   date: Date | string
 }
 
-export function mapFinanceItem(item: Partial<IFinanceItem>): FinanceItem {
+export function mapFinanceItem(item: Partial<IFinanceItem>): IFinanceItem {
   return {
     id: item.id || null,
     name: item.name || '',
