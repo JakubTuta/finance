@@ -132,6 +132,47 @@ function onYearChange(newYear: number) {
 function openCSVReadDialog() {
   isOpenCSVReadDialog.value = true
 }
+
+function getDailyAmounts(date: Date) {
+  const items = financeItems.value.filter(item => isSameDay(new Date(item.date), date))
+
+  const groupedByCurrency = items.reduce((acc, item) => {
+    if (!acc[item.currency]) {
+      acc[item.currency] = 0
+    }
+    acc[item.currency] += item.amount
+
+    return acc
+  }, {} as Record<string, number>)
+
+  return Object.entries(groupedByCurrency).map(([currency, amount]) => `${amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(currency)}`)
+}
+
+function getNextSubscriptionPayment(item: IFinanceItem) {
+  if (!item.isSubscription || !item.subscription)
+    return ''
+
+  const nextDate = new Date(item.date)
+
+  switch (item.subscription.repeatPeriod) {
+    case 'day':
+      nextDate.setDate(nextDate.getDate() + item.subscription.repeatValue)
+      break
+    case 'week':
+      nextDate.setDate(nextDate.getDate() + item.subscription.repeatValue * 7)
+      break
+    case 'month':
+      nextDate.setMonth(nextDate.getMonth() + item.subscription.repeatValue)
+      break
+    default:
+      return ''
+  }
+
+  if (item.subscription.endDate && nextDate > new Date(item.subscription.endDate))
+    return 'Ended'
+
+  return dateToString(nextDate)
+}
 </script>
 
 <template>
@@ -260,7 +301,7 @@ function openCSVReadDialog() {
               ? 'text-success'
               : 'text-error'"
           >
-            {{ itemsInDate.items.reduce((acc, item) => acc + item.amount, 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') }} zł
+            {{ getDailyAmounts(itemsInDate.date).join(', ') }}
           </span>
         </span>
 
@@ -287,9 +328,31 @@ function openCSVReadDialog() {
             </v-card-title>
 
             <v-card-subtitle>
-              <v-chip :color="mapCategoriesColor[item.category]">
-                {{ mapCategories[item.category] }}
-              </v-chip>
+              <div class="justify-space-between align-center flex">
+                <v-chip :color="mapCategoriesColor[item.category]">
+                  {{ mapCategories[item.category] }}
+                </v-chip>
+
+                <v-tooltip location="bottom">
+                  <template #activator="{props}">
+                    <v-icon
+                      v-if="item.isSubscription"
+                      color="warning"
+                      v-bind="props"
+                    >
+                      mdi-reload
+                    </v-icon>
+                  </template>
+
+                  <p>
+                    Subscription
+                  </p>
+
+                  <p>
+                    Next payment: {{ getNextSubscriptionPayment(item) }}
+                  </p>
+                </v-tooltip>
+              </div>
             </v-card-subtitle>
 
             <v-card-text
@@ -297,16 +360,35 @@ function openCSVReadDialog() {
               style="display: flex; justify-content: space-between; align-items: center;"
             >
               <span>
-                {{ `${item.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} zł` }}
+                {{ `${item.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(item.currency)}` }}
               </span>
 
-              <v-btn
-                size="x-small"
-                color="error"
-                variant="outlined"
-                icon="mdi-window-close"
-                @click.stop="appStore.deleteFinanceItem(item)"
-              />
+              <div>
+                <v-tooltip location="bottom">
+                  <template #activator="{props}">
+                    <v-btn
+                      v-if="item.isSubscription"
+                      v-bind="props"
+                      class="mx-1"
+                      size="x-small"
+                      color="warning"
+                      variant="outlined"
+                      icon="mdi-pause"
+                      @click.stop="appStore.pauseSubscription(item, itemsInDate.date)"
+                    />
+                  </template>
+
+                  Pause this subscription
+                </v-tooltip>
+
+                <v-btn
+                  size="x-small"
+                  color="error"
+                  variant="outlined"
+                  icon="mdi-window-close"
+                  @click.stop="appStore.deleteFinanceItem(item)"
+                />
+              </div>
             </v-card-text>
           </v-card>
         </v-col>

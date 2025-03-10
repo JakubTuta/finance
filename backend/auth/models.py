@@ -31,10 +31,16 @@ class PyObjectId(str):
         return v
 
 
+class UserRequest(pydantic.BaseModel):
+    username: str
+    currency: str = "USD"
+
+
 class User(pydantic.BaseModel):
     id: typing.Optional[PyObjectId] = pydantic.Field(default=None, alias="_id")
     username: str
     password: str
+    currency: str = "USD"
 
     model_config = pydantic.ConfigDict(
         arbitrary_types_allowed=True,

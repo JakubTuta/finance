@@ -229,3 +229,25 @@ async def get_current_user(
         raise fastapi.HTTPException(status_code=401, detail="User not found")
 
     return user
+
+
+async def update_user(current_user: models.User, request_data: models.UserRequest):
+    collection = database.get_collection("users")
+
+    if request_data.username is not None:
+        current_user.username = request_data.username
+
+    if request_data.currency is not None:
+        current_user.currency = request_data.currency
+
+    await collection.update_one(
+        {"_id": bson.ObjectId(current_user.id)},
+        {
+            "$set": {
+                "username": current_user.username,
+                "currency": current_user.currency,
+            }
+        },
+    )
+
+    return current_user

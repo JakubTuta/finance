@@ -37,9 +37,9 @@ app.add_middleware(
 )
 
 routers = [
+    auth_router,
     finances_router,
     calendar_router,
-    auth_router,
 ]
 
 for router in routers:

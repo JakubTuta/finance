@@ -159,7 +159,7 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
 
-    const url = `/auth/me/`
+    const url = '/auth/me/'
     const response = await apiStore.sendRequest({
       url,
       method: 'GET',
@@ -176,9 +176,8 @@ export const useAuthStore = defineStore('auth', () => {
       return
     }
 
-    const responseObject = response as AxiosResponse<{ user: IUser }>
-    const responseData = responseObject.data
-    user.value = mapUser(responseData.user)
+    const responseObject = response as AxiosResponse
+    user.value = mapUser(responseObject.data)
 
     if (['/', '/auth/login', '/auth/register'].includes(router.currentRoute.value.path)) {
       initLoading.value = false

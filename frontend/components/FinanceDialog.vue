@@ -11,6 +11,10 @@ const { editedItem } = toRefs(props)
 const isShow = defineModel('isShow', { type: Boolean, default: false })
 
 const appStore = useAppStore()
+const userStore = useUserStore()
+
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
 
 const name = ref('')
 const amount = ref<number | null>(null)
@@ -20,8 +24,16 @@ const valid = ref(false)
 const paymentType = ref<'one-time' | 'recurring'>('one-time')
 const repeatPeriod = ref('day')
 const repeatValue = ref(1)
+const currency = ref<string | null>(null)
 
 const categoryItems = Object.entries(mapCategories).map(([key, value]) => ({ title: value, value: key }))
+
+watch(user, (newValue) => {
+  if (!newValue)
+    return
+
+  currency.value = newValue.currency
+}, { immediate: true })
 
 watch(editedItem, (newValue) => {
   if (!newValue)
@@ -46,7 +58,7 @@ function close() {
 }
 
 function save() {
-  if (!name.value || !amount.value || !category.value) {
+  if (!name.value || !amount.value || !category.value || !currency.value) {
     valid.value = false
 
     return
@@ -58,6 +70,7 @@ function save() {
     amount: amount.value,
     date: date.value,
     category: category.value as categories,
+    currency: currency.value,
   }
 
   if (editedItem.value) {
@@ -71,6 +84,17 @@ function save() {
   }
 
   close()
+}
+
+function updateCurrency(value: string) {
+  if (!value)
+    return
+
+  currency.value = value
+  userStore.updateUser({
+    username: user.value?.username || '',
+    currency: value,
+  })
 }
 </script>
 
@@ -114,6 +138,15 @@ function save() {
             ]"
           />
 
+          <v-autocomplete
+            v-model="currency"
+            class="my-4"
+            :items="topCurrencies"
+            label="Currency"
+            :rules="[requiredRule('Currency')]"
+            @update:model-value="updateCurrency"
+          />
+
           <v-text-field
             class="my-4"
             readonly
@@ -133,7 +166,6 @@ function save() {
                     color="primary"
                     :first-day-of-week="1"
                     width="100%"
-
                     landscape
                     hide-header
                   />

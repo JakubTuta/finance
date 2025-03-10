@@ -40,10 +40,29 @@ export const useUserStore = defineStore('user', () => {
     }
 
     const responseObject = response as AxiosResponse
-    const responseData = responseObject.data
-    user.value = mapUser(responseData.user)
+    user.value = mapUser(responseObject.data)
 
     loading.value = false
+  }
+
+  const updateUser = async (data: any) => {
+    const url = '/auth/update-user-data/'
+    const response = await apiStore.sendRequest({
+      url,
+      method: 'PUT',
+      data,
+    })
+
+    if (!apiStore.isResponseOk(response)) {
+      return false
+    }
+
+    const responseObject = response as AxiosResponse<{ user: IUser }>
+    const responseData = responseObject.data
+
+    user.value = mapUser(responseData.user)
+
+    return true
   }
 
   return {
@@ -51,5 +70,6 @@ export const useUserStore = defineStore('user', () => {
     loading,
     resetState,
     getUser,
+    updateUser,
   }
 })

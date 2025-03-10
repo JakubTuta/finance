@@ -65,12 +65,26 @@ async def register(
     }
 
 
+@router.put(
+    "/update-user-data",
+    response_model=models.User,
+    response_model_exclude={"password"},
+    response_model_by_alias=False,
+)
+async def update_user(
+    user_data: models.UserRequest,
+    current_user: models.User = fastapi.Depends(functions.get_current_user),
+) -> models.User:
+    user = await functions.update_user(current_user, user_data)
+
+    return user
+
+
 @router.post("/token/refresh", response_model=models.TokenPair)
 async def refresh_token(
     refresh_data: models.RefreshRequest,
 ) -> models.TokenPair:
     refresh_token = refresh_data.refresh
-
     if functions.is_refresh_token_expired(refresh_token):
         raise fastapi.HTTPException(status_code=400, detail="Refresh token expired")
 

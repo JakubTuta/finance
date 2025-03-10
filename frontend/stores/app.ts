@@ -44,7 +44,7 @@ export const useAppStore = defineStore('app', () => {
 
     if (apiStore.isResponseOk(response)) {
       const responseObject = response as AxiosResponse
-      financeItems.value.push(mapFinanceItem(responseObject.data))
+      financeItems.value.push(...responseObject.data.map(mapFinanceItem))
     }
 
     loading.value = false
@@ -106,6 +106,20 @@ export const useAppStore = defineStore('app', () => {
     loading.value = false
   }
 
+  const pauseSubscription = async (item: IFinanceItem, date: Date) => {
+    loading.value = true
+
+    const url = `/finances/${item.id}/pause?endDate=${date.toISOString()}`
+    const response = await apiStore.sendRequest({ url, method: 'GET' })
+
+    if (apiStore.isResponseOk(response)) {
+      const responseObject = response as AxiosResponse
+      console.log(responseObject.data)
+    }
+
+    loading.value = false
+  }
+
   const uploadFile = async (formData: FormData | null) => {
     if (!formData) {
       return
@@ -129,6 +143,7 @@ export const useAppStore = defineStore('app', () => {
     updateFinanceItem,
     deleteFinanceItem,
     getCalendarSummary,
+    pauseSubscription,
     uploadFile,
   }
 })
