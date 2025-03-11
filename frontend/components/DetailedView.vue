@@ -145,7 +145,7 @@ function getDailyAmounts(date: Date) {
     return acc
   }, {} as Record<string, number>)
 
-  return Object.entries(groupedByCurrency).map(([currency, amount]) => `${amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(currency)}`)
+  return Object.entries(groupedByCurrency).map(([currency, amount]) => `${amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(currency)}`)
 }
 
 function getNextSubscriptionPayment(item: IFinanceItem) {
@@ -360,7 +360,7 @@ function getNextSubscriptionPayment(item: IFinanceItem) {
               style="display: flex; justify-content: space-between; align-items: center;"
             >
               <span>
-                {{ `${item.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(item.currency)}` }}
+                {{ `${item.amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(item.currency)}` }}
               </span>
 
               <div>

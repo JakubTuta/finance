@@ -1,4 +1,5 @@
 import type { AxiosResponse } from 'axios'
+import { mapFileData } from '~/models/FileData'
 import type { IFinanceItem } from '~/models/Finance'
 import { mapFinanceItem } from '~/models/Finance'
 
@@ -114,7 +115,13 @@ export const useAppStore = defineStore('app', () => {
 
     if (apiStore.isResponseOk(response)) {
       const responseObject = response as AxiosResponse
-      console.log(responseObject.data)
+      financeItems.value = financeItems.value.filter((item) => {
+        if (item.id !== responseObject.data.id) {
+          return true
+        }
+
+        return item.date < date
+      })
     }
 
     loading.value = false
@@ -125,13 +132,15 @@ export const useAppStore = defineStore('app', () => {
       return
     }
 
-    loading.value = true
-
     const url = '/finances/upload'
 
     const response = await apiStore.sendRequest({ url, method: 'POST', data: formData, headers: { 'Content-Type': 'multipart/form-data' } })
 
-    loading.value = false
+    if (apiStore.isResponseOk(response)) {
+      const responseObject = response as AxiosResponse
+
+      return responseObject.data.map(mapFileData)
+    }
   }
 
   return {

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { IFileData } from '~/models/FileData'
+
 const isShow = defineModel('isShow', { type: Boolean, default: false })
 
 const appStore = useAppStore()
@@ -6,8 +8,25 @@ const appStore = useAppStore()
 const formData = ref<FormData | null>(null)
 const wrongFileType = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
+const fileContents = ref<IFileData[]>([])
+const fileLoading = ref(false)
 
-function save() {
+async function save() {
+  const financeItems = fileContents.value.map(fileContent => ({
+    date: fileContent.date,
+    title: fileContent.title,
+    amount: fileContent.amount,
+    currency: fileContent.currency,
+    category: fileContent.category as categories,
+    id: '',
+    name: fileContent.title, // Using title as name
+    isSubscription: false,
+    subscription: null,
+  }))
+
+  const promises = financeItems.map(financeItem => appStore.addFinanceItem(financeItem))
+  await Promise.all(promises)
+
   close()
 }
 
@@ -25,7 +44,7 @@ function handleFileChoose(event: any) {
   handleFile(fileList)
 }
 
-function handleFile(fileList: any[]) {
+async function handleFile(fileList: any[]) {
   if (fileList.length !== 1)
     return
 
@@ -36,12 +55,14 @@ function handleFile(fileList: any[]) {
     return
   }
 
+  fileLoading.value = true
   wrongFileType.value = false
 
   formData.value = new FormData()
   formData.value.append('file', file)
 
-  appStore.uploadFile(formData.value)
+  fileContents.value = await appStore.uploadFile(formData.value)
+  fileLoading.value = false
 }
 </script>
 
@@ -112,6 +133,62 @@ function handleFile(fileList: any[]) {
             </div>
           </v-sheet>
         </div>
+
+        <div align="center">
+          <v-progress-circular
+            v-if="fileLoading"
+            indeterminate
+            color="primary"
+            class="mt-6"
+          />
+        </div>
+
+        <v-row
+          v-if="fileContents.length > 0 && !fileLoading"
+          class="ma-1 mt-6"
+        >
+          <v-col
+            v-for="fileContent in fileContents"
+            :key="fileContent.date.toISOString()"
+            cols="12"
+            sm="6"
+            class="pa-4"
+          >
+            <v-card>
+              <v-card-title>
+                {{ fullDateToString(fileContent.date) }}
+              </v-card-title>
+
+              <v-card-text>
+                <v-text-field
+                  v-model="fileContent.title"
+                  label="Title"
+                />
+
+                <v-text-field
+                  v-model.number="fileContent.amount"
+                  label="Amount"
+                />
+
+                <v-autocomplete
+                  v-model="fileContent.currency"
+                  :items="topCurrencies"
+                  label="Currency"
+                />
+
+                <v-select
+                  v-model="fileContent.category as categories"
+                  :items="Object.entries(mapCategories).map(([
+                    key,
+                    value,
+                  ]) => ({'title': value,
+                          'value': key}))"
+                  label="Category"
+                />
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
       </v-card-text>
 
       <v-divider />

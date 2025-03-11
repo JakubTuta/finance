@@ -144,7 +144,9 @@ class FinanceItemWrapper:
         current_date = start_date
 
         while current_date <= end_date:
-            finance_item = FinanceItem(**subscription_item.model_dump())
+            finance_item = FinanceItem(
+                **subscription_item.model_dump(), _id=subscription_item.id
+            )
             finance_item.date = current_date
             result.append(finance_item)
 

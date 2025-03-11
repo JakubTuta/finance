@@ -89,7 +89,7 @@ async def create_finance_item(
             **request_data, user=current_user.id, is_subscription=False
         )
         created_finance_items = [await finance_wrapper.create_item(finance_object)]
-
+    print(created_finance_items)
     return created_finance_items
 
 
@@ -252,17 +252,14 @@ async def pause_subscription_item(
 @router.post(
     "/upload",
     response_description="Upload a file",
-    response_model=typing.List[models.FinanceItem],
+    response_model=typing.List[functions.BotResponse],
     response_model_by_alias=False,
     status_code=201,
 )
 async def upload_file(
     request: fastapi.Request,
     current_user: auth_models.User = fastapi.Depends(auth_functions.get_current_user),
-    finance_wrapper: models.FinanceItemWrapper = fastapi.Depends(
-        models.get_finance_wrapper
-    ),
-) -> typing.List[models.FinanceItem]:
+) -> typing.List[functions.BotResponse]:
     if current_user.id is None:
         raise fastapi.HTTPException(status_code=401, detail="User not authenticated")
 
@@ -288,6 +285,11 @@ async def upload_file(
         raise fastapi.HTTPException(
             status_code=400, detail="Could not decode file with supported encodings"
         )
+
+    csv_content = csv_content[1:]
+    bot_response = functions.ask_bot(csv_content)
+
+    return bot_response
 
     # chunk_size = 8 * 1024  # 8 KB
     # line_buffer = ""
@@ -329,5 +331,3 @@ async def upload_file(
     # # Process any remaining data in the buffer
     # if line_buffer:
     #     await finance_wrapper.process_csv_line(line_buffer.strip(), current_user.id)
-
-    return []
