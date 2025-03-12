@@ -24,7 +24,7 @@ async def login(
         raise fastapi.HTTPException(status_code=400, detail="Invalid username")
 
     if not functions.verify_password(password, user.password):
-        raise fastapi.HTTPException(status_code=400, detail="Invalid password")
+        raise fastapi.HTTPException(status_code=401, detail="Invalid password")
 
     token_pair = functions.generate_tokens(user=user)
 

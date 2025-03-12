@@ -2,7 +2,6 @@ import type { AxiosResponse } from 'axios'
 import { jwtDecode } from 'jwt-decode'
 import type { IUser } from '~/models/User'
 import { mapUser } from '~/models/User'
-import { useUserStore } from './user'
 
 export const useAuthStore = defineStore('auth', () => {
   const loading = ref(false)
@@ -12,6 +11,7 @@ export const useAuthStore = defineStore('auth', () => {
   const apiStore = useApiStore()
   const userStore = useUserStore()
   const router = useRouter()
+  const snackbarStore = useSnackbarStore()
 
   const clearAuth = () => {
     localStorage.removeItem('access')
@@ -39,6 +39,16 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (!apiStore.isResponseOk(response)) {
       loading.value = false
+
+      if (response?.status === 400) {
+        snackbarStore.showSnackbarError('User with this username doesn\'t exist.')
+      }
+      else if (response?.status === 401) {
+        snackbarStore.showSnackbarError('Invalid password.')
+      }
+      else {
+        snackbarStore.showSnackbarSuccess('Error while logging in.')
+      }
 
       return
     }
@@ -77,6 +87,13 @@ export const useAuthStore = defineStore('auth', () => {
 
     if (!apiStore.isResponseOk(response)) {
       loading.value = false
+
+      if (response?.status === 400) {
+        snackbarStore.showSnackbarError('User with this username already exists.')
+      }
+      else {
+        snackbarStore.showSnackbarSuccess('Error while registering.')
+      }
 
       return
     }
