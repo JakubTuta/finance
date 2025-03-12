@@ -47,7 +47,7 @@ export const useAuthStore = defineStore('auth', () => {
         snackbarStore.showSnackbarError('Invalid password.')
       }
       else {
-        snackbarStore.showSnackbarSuccess('Error while logging in.')
+        snackbarStore.showSnackbarError('Error while logging in.')
       }
 
       return
@@ -92,7 +92,7 @@ export const useAuthStore = defineStore('auth', () => {
         snackbarStore.showSnackbarError('User with this username already exists.')
       }
       else {
-        snackbarStore.showSnackbarSuccess('Error while registering.')
+        snackbarStore.showSnackbarError('Error while registering.')
       }
 
       return

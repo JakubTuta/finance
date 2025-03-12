@@ -13,7 +13,7 @@ export const useAppStore = defineStore('app', () => {
   const fetchFinanceItems = async (startDate: Date, endDate: Date) => {
     loading.value = true
 
-    const url = `/finances?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+    const url = `/finances/?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
 
     const response = await apiStore.sendRequest({ url, method: 'GET' })
 
@@ -40,7 +40,7 @@ export const useAppStore = defineStore('app', () => {
     if (repeatValue)
       urlParams.append('repeatValue', repeatValue.toString())
 
-    const url = `/finances?${urlParams.toString()}`
+    const url = `/finances/?${urlParams.toString()}`
     const response = await apiStore.sendRequest({ url, method: 'POST', data: item })
 
     if (apiStore.isResponseOk(response)) {
@@ -54,7 +54,7 @@ export const useAppStore = defineStore('app', () => {
   const updateFinanceItem = async (item: IFinanceItem) => {
     loading.value = true
 
-    const url = `/finances/${item.id}`
+    const url = `/finances/${item.id}/`
     const response = await apiStore.sendRequest({ url, method: 'PUT', data: item })
 
     if (apiStore.isResponseOk(response)) {
@@ -71,7 +71,7 @@ export const useAppStore = defineStore('app', () => {
 
     const id = item.id
 
-    const url = `/finances/${id}`
+    const url = `/finances/${id}/`
     const response = await apiStore.sendRequest({ url, method: 'DELETE' })
 
     if (apiStore.isResponseOk(response)) {
@@ -95,7 +95,7 @@ export const useAppStore = defineStore('app', () => {
     const startDate = startOfMonth(date)
     const endDate = endOfMonth(date)
 
-    const url = `/calendar?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+    const url = `/calendar/?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
 
     const response = await apiStore.sendRequest({ url, method: 'GET' })
 
@@ -110,7 +110,7 @@ export const useAppStore = defineStore('app', () => {
   const pauseSubscription = async (item: IFinanceItem, date: Date) => {
     loading.value = true
 
-    const url = `/finances/${item.id}/pause?endDate=${date.toISOString()}`
+    const url = `/finances/${item.id}/pause/?endDate=${date.toISOString()}`
     const response = await apiStore.sendRequest({ url, method: 'GET' })
 
     if (apiStore.isResponseOk(response)) {
@@ -132,7 +132,7 @@ export const useAppStore = defineStore('app', () => {
       return
     }
 
-    const url = '/finances/upload'
+    const url = '/finances/upload/'
 
     const response = await apiStore.sendRequest({ url, method: 'POST', data: formData, headers: { 'Content-Type': 'multipart/form-data' } })
 

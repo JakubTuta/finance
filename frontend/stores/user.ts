@@ -27,7 +27,7 @@ export const useUserStore = defineStore('user', () => {
       return
     }
 
-    const url = `/auth/me`
+    const url = `/auth/me/`
     const response = await apiStore.sendRequest({
       url,
       method: 'GET',

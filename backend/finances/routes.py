@@ -94,7 +94,7 @@ async def create_finance_item(
 
 
 @router.get(
-    "/{item_id}",
+    "/{item_id}/",
     response_description="Get a finance item",
     response_model=typing.List[models.FinanceItem],
     response_model_by_alias=False,
@@ -117,7 +117,7 @@ async def get_finance_item(
 
 
 @router.put(
-    "/{item_id}",
+    "/{item_id}/",
     response_description="Update a finance item",
     response_model=models.FinanceItem,
     response_model_by_alias=False,
@@ -166,7 +166,7 @@ async def update_finance_item(
 
 
 @router.delete(
-    "/{item_id}",
+    "/{item_id}/",
     response_description="Delete a finance item",
     response_model=str,
     status_code=200,
@@ -203,7 +203,7 @@ async def delete_finance_item(
 
 
 @router.get(
-    "/{item_id}/pause",
+    "/{item_id}/pause/",
     response_description="Pause a subscription item",
     response_model=models.SubscriptionItem,
     response_model_by_alias=False,
@@ -250,7 +250,7 @@ async def pause_subscription_item(
 
 
 @router.post(
-    "/upload",
+    "/upload/",
     response_description="Upload a file",
     response_model=typing.List[functions.BotResponse],
     response_model_by_alias=False,

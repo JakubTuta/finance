@@ -9,7 +9,7 @@ router = fastapi.APIRouter(prefix="/auth")
 
 
 @router.post(
-    "/login",
+    "/login/",
     response_model=typing.Dict[str, typing.Union[models.User, models.TokenPair]],
     response_model_exclude={"user": {"password"}},
     response_model_by_alias=False,
@@ -38,7 +38,7 @@ async def login(
 
 
 @router.post(
-    "/register",
+    "/register/",
     response_model=typing.Dict[str, typing.Union[models.User, models.TokenPair]],
     response_model_exclude={"user": {"password"}},
     response_model_by_alias=False,
@@ -66,7 +66,7 @@ async def register(
 
 
 @router.put(
-    "/update-user-data",
+    "/update-user-data/",
     response_model=models.User,
     response_model_exclude={"password"},
     response_model_by_alias=False,
@@ -80,7 +80,7 @@ async def update_user(
     return user
 
 
-@router.post("/token/refresh", response_model=models.TokenPair)
+@router.post("/token/refresh/", response_model=models.TokenPair)
 async def refresh_token(
     refresh_data: models.RefreshRequest,
 ) -> models.TokenPair:
@@ -103,7 +103,7 @@ async def refresh_token(
 
 
 @router.get(
-    "/me",
+    "/me/",
     response_model=models.User,
     response_model_exclude={"password"},
     response_model_by_alias=False,

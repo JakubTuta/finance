@@ -7,7 +7,6 @@ import finances.models as finances_models
 
 router = fastapi.APIRouter(
     prefix="/calendar",
-    tags=["calendar"],
 )
 
 
