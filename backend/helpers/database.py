@@ -1,11 +1,14 @@
 import os
 import typing
 
+import dotenv
 from motor.motor_asyncio import (
     AsyncIOMotorClient,
     AsyncIOMotorCollection,
     AsyncIOMotorDatabase,
 )
+
+dotenv.load_dotenv()
 
 mongodb_client: AsyncIOMotorClient
 mongodb_database: AsyncIOMotorDatabase

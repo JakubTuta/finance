@@ -1,7 +1,7 @@
 import typing
 
+import bson
 import pydantic
-from bson import ObjectId
 
 
 class RefreshRequest(pydantic.BaseModel):
@@ -19,32 +19,20 @@ class TokenData(pydantic.BaseModel):
     exp: typing.Optional[int] = None  # Unix timestamp
 
 
-class PyObjectId(str):
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v, info=None):
-        if isinstance(v, ObjectId):
-            return str(v)
-        return v
-
-
 class UserRequest(pydantic.BaseModel):
     username: str
     currency: str = "USD"
 
 
 class User(pydantic.BaseModel):
-    id: typing.Optional[PyObjectId] = pydantic.Field(default=None, alias="_id")
+    id: typing.Optional[bson.ObjectId] = pydantic.Field(default=None, alias="_id")
     username: str
     password: str
     currency: str = "USD"
 
     model_config = pydantic.ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={ObjectId: str},
+        json_encoders={bson.ObjectId: str},
         populate_by_name=True,
     )
 

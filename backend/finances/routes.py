@@ -89,7 +89,7 @@ async def create_finance_item(
             **request_data, user=current_user.id, is_subscription=False
         )
         created_finance_items = [await finance_wrapper.create_item(finance_object)]
-    print(created_finance_items)
+
     return created_finance_items
 
 

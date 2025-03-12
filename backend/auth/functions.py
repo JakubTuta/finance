@@ -3,6 +3,7 @@ import os
 import typing
 
 import bson
+import dotenv
 import fastapi
 from fastapi.security import OAuth2PasswordBearer
 from helpers import database
@@ -10,6 +11,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from . import models
+
+dotenv.load_dotenv()
 
 ACCESS_SECRET_KEY = os.getenv("ACCESS_SECRET_KEY")
 REFRESH_SECRET_KEY = os.getenv("REFRESH_SECRET_KEY")

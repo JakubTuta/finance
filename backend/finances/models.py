@@ -2,7 +2,6 @@ import datetime
 import re
 import typing
 
-import auth.models as auth_models
 import bson
 import helpers.database as database
 import pydantic
@@ -11,20 +10,18 @@ from dateutil.relativedelta import relativedelta
 
 
 class FinanceItem(pydantic.BaseModel):
-    id: typing.Optional[auth_models.PyObjectId] = pydantic.Field(
-        default=None, alias="_id"
-    )
+    id: typing.Optional[bson.ObjectId] = pydantic.Field(default=None, alias="_id")
     name: str
     amount: float
     date: datetime.datetime
     category: str
-    user: auth_models.PyObjectId
+    user: bson.ObjectId
     currency: str
     is_subscription: bool
 
     model_config = pydantic.ConfigDict(
         arbitrary_types_allowed=True,
-        json_encoders={auth_models.ObjectId: str},
+        json_encoders={bson.ObjectId: str},
         populate_by_name=True,
     )
 
@@ -52,7 +49,7 @@ class FinanceItemWrapper:
         self,
         start_date: typing.Union[str, datetime.datetime],
         end_date: typing.Union[str, datetime.datetime],
-        user_id: auth_models.PyObjectId,
+        user_id: bson.ObjectId,
     ) -> typing.AsyncGenerator[typing.Union[FinanceItem, SubscriptionItem], None]:
         start_date = self._parse_and_localize_date(start_date)
         end_date = self._parse_and_localize_date(end_date)
@@ -82,7 +79,7 @@ class FinanceItemWrapper:
         self,
         start_date: typing.Union[str, datetime.datetime],
         end_date: typing.Union[str, datetime.datetime],
-        user_id: auth_models.PyObjectId,
+        user_id: bson.ObjectId,
     ) -> typing.AsyncGenerator[SubscriptionItem, None]:
         start_date = self._parse_and_localize_date(start_date)
         end_date = self._parse_and_localize_date(end_date)
@@ -179,7 +176,7 @@ class FinanceItemWrapper:
         new_item = FinanceItem(**item.model_dump())
 
         response = await self.finances_collection.insert_one(new_item.model_dump())
-        new_item.id = auth_models.PyObjectId(response.inserted_id)
+        new_item.id = bson.ObjectId(response.inserted_id)
         return new_item
 
     async def create_subscription_item(
@@ -199,7 +196,7 @@ class FinanceItemWrapper:
         new_item = SubscriptionItem(**item.model_dump(), **subscription_data)
 
         response = await self.subscriptions_collection.insert_one(new_item.model_dump())
-        new_item.id = auth_models.PyObjectId(response.inserted_id)
+        new_item.id = bson.ObjectId(response.inserted_id)
         return new_item
 
     async def update_item(

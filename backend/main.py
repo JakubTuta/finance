@@ -1,14 +1,11 @@
 import contextlib
 
-import dotenv
 import fastapi
 from auth.routes import router as auth_router
 from calendarSummary.routes import router as calendar_router
 from fastapi.middleware.cors import CORSMiddleware
 from finances.routes import router as finances_router
 from helpers import database
-
-dotenv.load_dotenv()
 
 
 @contextlib.asynccontextmanager
