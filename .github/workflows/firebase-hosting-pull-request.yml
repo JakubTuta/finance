@@ -16,6 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - run: echo "SERVER_URL=https://server-418547258102.europe-central2.run.app" > .env
       - run: npm install --legacy-peer-deps
       - run: npm run generate
       - uses: FirebaseExtended/action-hosting-deploy@v0
