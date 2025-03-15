@@ -58,7 +58,7 @@ class BotResponseList(pydantic.BaseModel):
 def ask_bot(content: typing.List[str]) -> typing.List[BotResponse]:
     api_key = os.environ.get("GEMINI_API_KEY")
 
-    if api_key is None:
+    if not api_key:
         raise ValueError("GEMINI_API_KEY environment variable is not set.")
 
     model = ChatGoogleGenerativeAI(

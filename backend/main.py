@@ -1,11 +1,21 @@
 import contextlib
 
+import dotenv
 import fastapi
 from auth.routes import router as auth_router
 from calendarSummary.routes import router as calendar_router
 from fastapi.middleware.cors import CORSMiddleware
 from finances.routes import router as finances_router
 from helpers import database
+
+env_path = dotenv.find_dotenv(filename=".env", raise_error_if_not_found=True)
+if not env_path:
+    env_path = dotenv.find_dotenv(
+        filename=".env.example", raise_error_if_not_found=True
+    )
+
+if env_path:
+    dotenv.load_dotenv(env_path)
 
 
 @contextlib.asynccontextmanager

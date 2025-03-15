@@ -12,7 +12,15 @@ from passlib.context import CryptContext
 
 from . import models
 
-dotenv.load_dotenv()
+env_path = dotenv.find_dotenv(filename=".env", raise_error_if_not_found=True)
+if not env_path:
+    env_path = dotenv.find_dotenv(
+        filename=".env.example", raise_error_if_not_found=True
+    )
+
+if env_path:
+    dotenv.load_dotenv(env_path)
+
 
 ACCESS_SECRET_KEY = os.getenv("ACCESS_SECRET_KEY")
 REFRESH_SECRET_KEY = os.getenv("REFRESH_SECRET_KEY")
