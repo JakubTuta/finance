@@ -31,16 +31,16 @@ def get_collection(name: str) -> AsyncIOMotorCollection:
 
 def init_database():
     IS_DOCKER = os.getenv("DOCKER", "false").lower() == "true"
+    DOCKER_DATABASE_URL = os.getenv("DOCKER_DATABASE_HOST")
+    LOCAL_DATABASE_URL = os.getenv("LOCAL_DATABASE_HOST")
     DATABASE_URL = (
-        os.getenv("DOCKER_DATABASE_HOST")
-        if IS_DOCKER
-        else os.getenv("LOCAL_DATABASE_HOST")
+        DOCKER_DATABASE_URL if IS_DOCKER and DOCKER_DATABASE_URL else LOCAL_DATABASE_URL
     )
-    DATABASE_NAME = os.getenv("DATABASE_NAME")
 
     if not DATABASE_URL:
         raise Exception("DATABASE_URL not set")
 
+    DATABASE_NAME = os.getenv("DATABASE_NAME")
     if not DATABASE_NAME:
         raise Exception("DATABASE_NAME not set")
 
