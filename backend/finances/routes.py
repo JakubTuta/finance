@@ -2,6 +2,7 @@ import typing
 
 import auth.functions as auth_functions
 import auth.models as auth_models
+import bson
 import fastapi
 from starlette.datastructures import UploadFile
 
@@ -146,7 +147,10 @@ async def update_finance_item(
 
     if functions.is_model_subscription(database_finance_item):
         request_finance_item = models.SubscriptionItem(
-            **request_data, user=current_user.id
+            **request_data,
+            user=current_user.id,
+            is_subscription=True,
+            _id=bson.ObjectId(item_id),
         )
         subscription_item = typing.cast(models.SubscriptionItem, database_finance_item)
         is_updated = await finance_wrapper.update_subscription_item(
@@ -154,7 +158,12 @@ async def update_finance_item(
         )
 
     else:
-        request_finance_item = models.FinanceItem(**request_data, user=current_user.id)
+        request_finance_item = models.FinanceItem(
+            **request_data,
+            user=current_user.id,
+            _id=bson.ObjectId(item_id),
+            is_subscription=False,
+        )
         is_updated = await finance_wrapper.update_item(
             database_finance_item, request_finance_item
         )
@@ -290,44 +299,3 @@ async def upload_file(
     bot_response = functions.ask_bot(csv_content)
 
     return bot_response
-
-    # chunk_size = 8 * 1024  # 8 KB
-    # line_buffer = ""
-
-    # encodings = ["utf-8", "cp1250", "latin-1"]
-    # encoding_index = 0
-
-    # while True:
-    #     chunk = await file.read(chunk_size)
-    #     if not chunk:
-    #         break
-
-    #     try:
-    #         decoded_chunk = chunk.decode(encodings[encoding_index])
-    #         line_buffer += decoded_chunk
-
-    #         # Process complete lines
-    #         lines = line_buffer.splitlines(True)  # Keep line endings
-    #         for i, line in enumerate(lines[:-1]):
-    #             # Process each complete line here
-    #             await finance_wrapper.process_csv_line(line.strip(), current_user.id)
-
-    #         # Keep the last partial line for next iteration
-    #         line_buffer = lines[-1] if lines else ""
-
-    #     except UnicodeDecodeError:
-    #         # Try next encoding if current fails
-    #         encoding_index += 1
-    #         if encoding_index >= len(encodings):
-    #             raise fastapi.HTTPException(
-    #                 status_code=400,
-    #                 detail="Could not decode file with supported encodings",
-    #             )
-    #         # Rewind to start of file to try with new encoding
-    #         await file.seek(0)
-    #         line_buffer = ""
-    #         break
-
-    # # Process any remaining data in the buffer
-    # if line_buffer:
-    #     await finance_wrapper.process_csv_line(line_buffer.strip(), current_user.id)

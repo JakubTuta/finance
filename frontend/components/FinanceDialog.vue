@@ -71,6 +71,8 @@ function save() {
     date: date.value,
     category: category.value as categories,
     currency: currency.value,
+    isSubscription: false,
+    subscription: null,
   }
 
   if (editedItem.value) {

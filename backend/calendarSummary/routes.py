@@ -13,7 +13,7 @@ router = fastapi.APIRouter(
 @router.get(
     "/",
     response_description="Get calendar summary for dates",
-    response_model=dict[str, float],
+    response_model=typing.Dict[str, typing.Dict[str, float]],
     response_model_by_alias=False,
 )
 async def get_calendar_summary(
@@ -23,7 +23,7 @@ async def get_calendar_summary(
     finance_wrapper: finances_models.FinanceItemWrapper = fastapi.Depends(
         finances_models.get_finance_wrapper
     ),
-) -> dict[str, str]:
+) -> typing.Dict[str, typing.Dict[str, float]]:
     if current_user.id is None:
         raise fastapi.HTTPException(status_code=401, detail="User not authenticated")
 
@@ -35,10 +35,14 @@ async def get_calendar_summary(
     summary = {}
     async for item in generator:
         string_date = item.date.strftime("%Y-%m-%d")
+        currency = item.currency
 
         if string_date not in summary:
-            summary[string_date] = 0
+            summary[string_date] = {}
 
-        summary[string_date] += item.amount
+        if currency not in summary[string_date]:
+            summary[string_date] = {currency: 0}
+
+        summary[string_date][currency] += round(item.amount, 2)
 
     return summary

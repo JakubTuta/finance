@@ -1,4 +1,5 @@
 import type { AxiosResponse } from 'axios'
+import type { ICalendarDay } from '~/models/CalendarDay'
 import { mapFileData } from '~/models/FileData'
 import type { IFinanceItem } from '~/models/Finance'
 import { mapFinanceItem } from '~/models/Finance'
@@ -6,7 +7,7 @@ import { mapFinanceItem } from '~/models/Finance'
 export const useAppStore = defineStore('app', () => {
   const loading = ref(false)
   const financeItems = ref<IFinanceItem[]>([])
-  const summaryItems = ref<{ [key: string]: { [key: string]: number } }>({})
+  const summaryItems = ref<{ [key: string]: ICalendarDay }>({})
 
   const apiStore = useApiStore()
 
