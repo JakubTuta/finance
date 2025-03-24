@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Set the environment variable
-ENV DOCKER "true"
+ENV DOCKER=true
 
 # Expose the port the application runs on
 EXPOSE 8000

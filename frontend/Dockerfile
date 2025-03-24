@@ -26,7 +26,7 @@ WORKDIR /app
 COPY --from=builder /app/.output ./.output
 
 # Set the environment variable
-ENV DOCKER "true"
+ENV DOCKER=true
 
 # Expose the port
 EXPOSE 3000

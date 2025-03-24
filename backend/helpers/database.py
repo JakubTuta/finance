@@ -37,17 +37,21 @@ def get_collection(name: str) -> AsyncIOMotorCollection:
 
 
 def init_database():
-    IS_PRODUCTION = os.getenv("IS_PRODUCTION") == "true"
-    PRODUCTION_DATABASE_URL = os.getenv("DOCKER_DATABASE_HOST")
-    LOCAL_DATABASE_URL = os.getenv("LOCAL_DATABASE_HOST")
-    DATABASE_URL = (
-        PRODUCTION_DATABASE_URL
-        if IS_PRODUCTION and PRODUCTION_DATABASE_URL
-        else LOCAL_DATABASE_URL
-    )
+    LOCAL_DATABASE_HOST = os.getenv("LOCAL_DATABASE_HOST")
+    DOCKER_DATABASE_HOST = os.getenv("DOCKER_DATABASE_HOST")
+    PRODUCTION_DATABASE_HOST = os.getenv("PRODUCTION_DATABASE_HOST")
 
-    if not DATABASE_URL:
-        raise Exception("DATABASE_URL not set")
+    IS_PRODUCTION = os.getenv("IS_PRODUCTION", "false") == "true"
+    IS_DOCKER = os.getenv("DOCKER", "false") == "true"
+
+    if IS_PRODUCTION and PRODUCTION_DATABASE_HOST:
+        DATABASE_HOST = PRODUCTION_DATABASE_HOST
+    elif IS_DOCKER and DOCKER_DATABASE_HOST:
+        DATABASE_HOST = DOCKER_DATABASE_HOST
+    elif LOCAL_DATABASE_HOST:
+        DATABASE_HOST = LOCAL_DATABASE_HOST
+    else:
+        raise Exception("DATABASE_HOST not set")
 
     DATABASE_NAME = os.getenv("DATABASE_NAME")
     if not DATABASE_NAME:
@@ -56,7 +60,7 @@ def init_database():
     global mongodb_client
     global mongodb_database
 
-    mongodb_client = AsyncIOMotorClient(DATABASE_URL)
+    mongodb_client = AsyncIOMotorClient(DATABASE_HOST)
     mongodb_database = mongodb_client.get_database(DATABASE_NAME)
 
     collections = [
