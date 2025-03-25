@@ -1,6 +1,13 @@
 <script setup lang="ts">
 definePageMeta({ middleware: ['auth'] })
 
+const appStore = useAppStore()
+
+onMounted(async () => {
+  await appStore.updateCurrencyRates()
+  await appStore.fetchCurrencyRates()
+})
+
 const selectedTab = ref('Detailed')
 
 const tabs = ['Detailed', 'Calendar']

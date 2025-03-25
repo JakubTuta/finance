@@ -1,7 +1,11 @@
+import datetime
 import os
 import typing
 
+import helpers.database as database
 import pydantic
+import requests
+from helpers.currencies import currencies
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -91,3 +95,63 @@ def ask_bot(content: typing.List[str]) -> typing.List[BotResponse]:
             item.category = "others"
 
     return response_list.items
+
+
+async def update_currency_rates():
+    collection = database.get_collection("currency_rates")
+
+    date_doc_id = "update_date"
+    date_doc = await collection.find_one({"_id": date_doc_id})
+
+    if date_doc is None:
+        await collection.insert_one(
+            {"_id": date_doc_id, "date": datetime.datetime.now()}
+        )
+        last_update_time = datetime.datetime.now()
+    else:
+        last_update_time = date_doc["date"]
+
+    if datetime.datetime.now() - last_update_time < datetime.timedelta(days=1):
+        return
+
+    api_key = os.environ.get("CURRENCY_API_KEY")
+    if not api_key:
+        raise ValueError("CURRENCY_API_KEY environment variable is not set.")
+
+    data = {}
+    for currency in currencies:
+        other_currencies = currencies.copy()
+        other_currencies.remove(currency)
+        other_currencies_str = ",".join(other_currencies)
+
+        url = f"https://api.freecurrencyapi.com/v1/latest?apikey={api_key}&base_currency={currency}&currencies={other_currencies_str}"
+
+        response = requests.get(url)
+
+        data[currency] = response.json()["data"]
+
+    await collection.update_one(
+        {"_id": date_doc_id},
+        {"$set": {"date": datetime.datetime.now()}},
+        upsert=True,
+    )
+
+    for base_currency, rates in data.items():
+        await collection.update_one(
+            {"_id": base_currency}, {"$set": rates}, upsert=True
+        )
+
+
+async def get_currency_rates():
+    collection = database.get_collection("currency_rates")
+
+    rates_per_currency = {}
+
+    for currency in currencies:
+        rates = await collection.find_one({"_id": currency})
+
+        if rates is not None:
+            del rates["_id"]
+            rates_per_currency[currency] = rates
+    print(rates_per_currency)
+    return rates_per_currency

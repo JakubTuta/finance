@@ -296,6 +296,40 @@ async def upload_file(
         )
 
     csv_content = csv_content[1:]
-    bot_response = functions.ask_bot(csv_content)
+
+    try:
+        bot_response = functions.ask_bot(csv_content)
+    except Exception as e:
+        raise fastapi.HTTPException(status_code=400, detail=str(e))
 
     return bot_response
+
+
+@router.get(
+    "/currency-rates/update/",
+    response_description="Update currency rates",
+    status_code=200,
+    response_model=str,
+)
+async def update_currency_rates(
+    current_user: auth_models.User = fastapi.Depends(auth_functions.get_current_user),
+    finance_wrapper: models.FinanceItemWrapper = fastapi.Depends(
+        models.get_finance_wrapper
+    ),
+) -> str:
+    if current_user.id is None:
+        raise fastapi.HTTPException(status_code=401, detail="User not authenticated")
+
+    await functions.update_currency_rates()
+
+    return "Currency rates updated"
+
+
+@router.get(
+    "/currency-rates/get/",
+    response_description="Get currency rates",
+    status_code=200,
+    response_model=typing.Dict[str, typing.Dict[str, float]],
+)
+async def get_currency_rates() -> typing.Dict[str, typing.Dict[str, float]]:
+    return await functions.get_currency_rates()

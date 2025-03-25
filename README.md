@@ -76,7 +76,9 @@ DATABASE_PASSWORD: Database password
 DATABASE_NAME: Database name
 DATABASE_PORT: Database port
 LOCAL_DATABASE_HOST: MongoDB url (for example hosted on docker)
-GEMINI_API_KEY: Your gemini api key
+CURRENCY_API_KEY: Your currency conversion api key (from [here](https://app.freecurrencyapi.com))
+
+GEMINI_API_KEY: Your gemini api key # Required for reading from .csv file
 
 # Optional
 PRODUCTION_DATABASE_HOST: Production MongoDB url (for example hosted on mongodb atlas)

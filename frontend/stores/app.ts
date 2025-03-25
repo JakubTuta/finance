@@ -8,6 +8,7 @@ export const useAppStore = defineStore('app', () => {
   const loading = ref(false)
   const financeItems = ref<IFinanceItem[]>([])
   const summaryItems = ref<{ [key: string]: ICalendarDay }>({})
+  const currencyRates = ref<{ [key: string]: number }>({})
 
   const apiStore = useApiStore()
 
@@ -144,6 +145,29 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  const updateCurrencyRates = async () => {
+    loading.value = true
+
+    const updateUrl = '/finances/currency-rates/update/'
+    await apiStore.sendRequest({ url: updateUrl, method: 'GET' })
+
+    loading.value = false
+  }
+
+  const fetchCurrencyRates = async () => {
+    loading.value = true
+
+    const url = '/finances/currency-rates/get/'
+    const response = await apiStore.sendRequest({ url, method: 'GET' })
+
+    if (apiStore.isResponseOk(response)) {
+      const responseObject = response as AxiosResponse
+      currencyRates.value = responseObject.data
+    }
+
+    loading.value = false
+  }
+
   return {
     loading,
     financeItems,
@@ -155,5 +179,7 @@ export const useAppStore = defineStore('app', () => {
     getCalendarSummary,
     pauseSubscription,
     uploadFile,
+    updateCurrencyRates,
+    fetchCurrencyRates,
   }
 })
