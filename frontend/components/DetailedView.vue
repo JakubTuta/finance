@@ -1,9 +1,6 @@
 <script setup lang="ts">
 import type { IFinanceItem } from '~/models/Finance'
 
-const appStore = useAppStore()
-const { financeItems, loading } = storeToRefs(appStore)
-
 const startDate = ref(startOfDay(addDays(new Date(), -30)))
 const endDate = ref(endOfDay(new Date()))
 const selectedDates = ref<Date[]>(populateSelectedDates())
@@ -15,6 +12,16 @@ const search = ref('')
 const selectedCategory = ref<string | null>(null)
 const isOpenCSVReadDialog = ref(false)
 const isCalendarOpen = ref(false)
+const useConvertedCurrency = ref(false)
+const selectedCurrency = ref<string | null>(null)
+
+const appStore = useAppStore()
+const { financeItems, loading, currencyRates } = storeToRefs(appStore)
+
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+
+const userStore = useUserStore()
 
 const isPositive = (amount: number) => amount >= 0
 
@@ -53,6 +60,13 @@ const itemsPerDate = computed(() => {
     return { date, items }
   }).filter(({ items }) => items.length)
 })
+
+watch(user, (newUser) => {
+  if (!newUser)
+    return
+
+  selectedCurrency.value = newUser.currency
+}, { immediate: true })
 
 watch(selectedDates, (newValue) => {
   if (!newValue.length)
@@ -133,21 +147,6 @@ function openCSVReadDialog() {
   isOpenCSVReadDialog.value = true
 }
 
-function getDailyAmounts(date: Date) {
-  const items = financeItems.value.filter(item => isSameDay(new Date(item.date), date))
-
-  const groupedByCurrency = items.reduce((acc, item) => {
-    if (!acc[item.currency]) {
-      acc[item.currency] = 0
-    }
-    acc[item.currency] += item.amount
-
-    return acc
-  }, {} as Record<string, number>)
-
-  return Object.entries(groupedByCurrency).map(([currency, amount]) => `${amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(currency)}`)
-}
-
 function getNextSubscriptionPayment(item: IFinanceItem) {
   if (!item.isSubscription || !item.subscription)
     return ''
@@ -173,11 +172,108 @@ function getNextSubscriptionPayment(item: IFinanceItem) {
 
   return dateToString(nextDate)
 }
+
+function updateCurrency(value: string) {
+  if (!value)
+    return
+
+  selectedCurrency.value = value
+  userStore.updateUser({
+    username: user.value?.username || '',
+    currency: value,
+  })
+}
+
+function calculateItemAmount(item: IFinanceItem): number {
+  if (useConvertedCurrency.value
+    && selectedCurrency.value
+    && item.currency !== selectedCurrency.value
+    && currencyRates.value
+    && currencyRates.value[item.currency]
+    // @ts-expect-error correct
+    && currencyRates.value[item.currency][selectedCurrency.value]) {
+    // @ts-expect-error correct
+    const rate = currencyRates.value[item.currency][selectedCurrency.value]
+
+    return item.amount * rate
+  }
+
+  return item.amount
+}
+
+function getItemAmount(item: IFinanceItem): string {
+  const amount = calculateItemAmount(item)
+  const currency = useConvertedCurrency.value && selectedCurrency.value
+    ? selectedCurrency.value
+    : item.currency
+
+  return `${amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(currency)}`
+}
+
+function dailyAmount(date: Date) {
+  if (useConvertedCurrency.value && selectedCurrency.value) {
+    return financeItems.value
+      .filter(item => isSameDay(new Date(item.date), date))
+      .reduce((acc, item) => acc + calculateItemAmount(item), 0)
+  }
+
+  // When not using converted currency, we return null as we'll use the groupedByCurrency in the string function
+  return null
+}
+
+function dailyAmountToString(date: Date) {
+  if (useConvertedCurrency.value && selectedCurrency.value) {
+    const amount = dailyAmount(date) as number
+
+    return [{
+      rawAmount: amount,
+      amount: amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '),
+      currency: selectedCurrency.value,
+      symbol: getCurrencySymbol(selectedCurrency.value),
+    }]
+  }
+  else {
+    const items = financeItems.value.filter(item => isSameDay(new Date(item.date), date))
+    const groupedByCurrency = items.reduce((acc, item) => {
+      if (!acc[item.currency]) {
+        acc[item.currency] = 0
+      }
+      acc[item.currency] += item.amount
+
+      return acc
+    }, {} as Record<string, number>)
+
+    return Object.entries(groupedByCurrency).map(([currency, amount]) => ({
+      rawAmount: amount,
+      amount: amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '),
+      currency,
+      symbol: getCurrencySymbol(currency),
+    }))
+  }
+}
 </script>
 
 <template>
   <v-card :loading="loading">
     <v-card-title>
+      <v-row class="mt-0">
+        <v-checkbox
+          v-model="useConvertedCurrency"
+          color="primary"
+          label="Use converted currency"
+        />
+
+        <v-autocomplete
+          v-if="useConvertedCurrency"
+          v-model="selectedCurrency"
+          :items="topCurrencies"
+          class="ml-4"
+          label="Currency"
+          max-width="200"
+          @update:model-value="updateCurrency"
+        />
+      </v-row>
+
       <v-row
         class="pa-2"
         style="display: flex; justify-content: space-between; align-items: center;"
@@ -297,11 +393,14 @@ function getNextSubscriptionPayment(item: IFinanceItem) {
           Daily:
 
           <span
-            :class="isPositive(itemsInDate.items.reduce((acc, item) => acc + item.amount, 0))
+            v-for="amount in dailyAmountToString(itemsInDate.date)"
+            :key="amount.currency"
+            :class="isPositive(amount.rawAmount)
               ? 'text-success'
               : 'text-error'"
+            class="mr-2"
           >
-            {{ getDailyAmounts(itemsInDate.date).join(', ') }}
+            {{ amount.amount }} {{ amount.symbol }}
           </span>
         </span>
 
@@ -360,7 +459,7 @@ function getNextSubscriptionPayment(item: IFinanceItem) {
               style="display: flex; justify-content: space-between; align-items: center;"
             >
               <span>
-                {{ `${item.amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(item.currency)}` }}
+                {{ getItemAmount(item) }}
               </span>
 
               <div>

@@ -43,6 +43,7 @@ watch(editedItem, (newValue) => {
   amount.value = newValue.amount
   date.value = new Date(newValue.date)
   category.value = newValue.category
+  currency.value = newValue.currency
 }, { immediate: true })
 
 function close() {
@@ -57,6 +58,13 @@ function close() {
   repeatPeriod.value = 'day'
 }
 
+function setMidDay(date: Date) {
+  const newDate = new Date(date)
+  newDate.setHours(12, 0, 0, 0)
+
+  return newDate
+}
+
 function save() {
   if (!name.value || !amount.value || !category.value || !currency.value) {
     valid.value = false
@@ -68,7 +76,9 @@ function save() {
     id: editedItem.value?.id || null,
     name: name.value,
     amount: amount.value,
-    date: date.value,
+    date: isSameDay(date.value, new Date())
+      ? date.value
+      : setMidDay(date.value),
     category: category.value as categories,
     currency: currency.value,
     isSubscription: false,

@@ -2,10 +2,19 @@
 // @ts-expect-error import
 import { Qalendar } from 'qalendar'
 
-const appStore = useAppStore()
-const { summaryItems, loading } = storeToRefs(appStore)
-
 const selectedDate = ref(new Date())
+const useConvertedCurrency = ref(false)
+const selectedCurrency = ref<string | null>(null)
+
+const appStore = useAppStore()
+const { summaryItems, loading, currencyRates } = storeToRefs(appStore)
+
+const authStore = useAuthStore()
+const { user } = storeToRefs(authStore)
+
+const userStore = useUserStore()
+
+const isPositive = (amount: number) => amount >= 0
 
 const config = {
   defaultMode: 'month',
@@ -17,6 +26,7 @@ const config = {
 }
 
 const events = computed(() => {
+  console.log(summaryItems.value)
   const year = selectedDate.value.getFullYear()
   const month = (selectedDate.value.getMonth() + 1).toString().padStart(2, '0')
   const key = `${year}-${month}`
@@ -46,15 +56,50 @@ const monthSummary = computed(() => {
     }, acc)
   }, {} as Record<string, number>)
 
-  return Object.entries(amountsPerCurrency).map(([currency, amount]) => `${amount} ${getCurrencySymbol(currency)}`).join(', ')
+  return Object.entries(amountsPerCurrency).map(([currency, amount]) => ({
+    rawAmount: amount,
+    amount: amount.toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' '),
+    currency,
+    symbol: getCurrencySymbol(currency),
+  }))
 })
+
+watch(user, (newUser) => {
+  if (!newUser)
+    return
+
+  selectedCurrency.value = newUser.currency
+}, { immediate: true })
 
 watch(selectedDate, async (newDate) => {
   await appStore.getCalendarSummary(newDate)
 }, { immediate: true })
 
+function updateCurrency(value: string) {
+  if (!value)
+    return
+
+  selectedCurrency.value = value
+  userStore.updateUser({
+    username: user.value?.username || '',
+    currency: value,
+  })
+}
+
 function findEvent(stringDate: string) {
-  return events.value.find(event => event.time === stringDate)
+  return events.value.find(event => event.time === stringDate.substring(0, 10))
+}
+
+function convertCurrency(amount: number, from: string, to: string) {
+  if (!currencyRates.value
+    || !currencyRates.value[from]
+    // @ts-expect-error correct
+    || !currencyRates.value[from][to]) {
+    return amount
+  }
+
+  // @ts-expect-error correct
+  return amount * currencyRates.value[from][to]
 }
 
 function getCellColor(time: string) {
@@ -64,17 +109,35 @@ function getCellColor(time: string) {
     return ''
   }
 
-  return 'rgba(255, 255, 255, 0.15)'
+  const convertedAmount = Object.entries(event.amountsPerCurrency).reduce((acc, [currency, amount]) => acc + convertCurrency(amount, currency, 'USD'), 0)
 
-  // return event.title > 0
-  //   ? 'rgba(0, 255, 0, 0.1)'
-  //   : 'rgba(255, 0, 0, 0.1)'
+  return convertedAmount > 0
+    ? 'rgba(0, 255, 0, 0.1)'
+    : 'rgba(255, 0, 0, 0.1)'
 }
 
 function handleUpdatePeriod(data: { start: Date, end: Date }) {
   const middleDate = new Date((data.start.getTime() + data.end.getTime()) / 2)
 
   selectedDate.value = middleDate
+}
+
+function convertCurrencyForEvent(date: string) {
+  if (!useConvertedCurrency.value || !selectedCurrency.value) {
+    return
+  }
+
+  const event = findEvent(date)
+
+  if (!event) {
+    return
+  }
+
+  return `${Object.entries(event.amountsPerCurrency).reduce((acc, [currency, amount]) => {
+    acc += convertCurrency(amount, currency, selectedCurrency.value!)
+
+    return acc
+  }, 0).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${selectedCurrency.value}`
 }
 </script>
 
@@ -85,7 +148,38 @@ function handleUpdatePeriod(data: { start: Date, end: Date }) {
       color="transparent"
     >
       <v-card-title v-if="monthSummary">
-        Month total: {{ monthSummary }}
+        <v-row class="mt-0">
+          <v-checkbox
+            v-model="useConvertedCurrency"
+            color="primary"
+            label="Use converted currency"
+          />
+
+          <v-autocomplete
+            v-if="useConvertedCurrency"
+            v-model="selectedCurrency"
+            :items="topCurrencies"
+            class="ml-4"
+            label="Currency"
+            max-width="200"
+            @update:model-value="updateCurrency"
+          />
+        </v-row>
+
+        <div class="mt-3">
+          Month total:
+
+          <span
+            v-for="amount in monthSummary"
+            :key="amount.currency"
+            :class="isPositive(amount.rawAmount)
+              ? 'text-success'
+              : 'text-error'"
+            class="mr-2"
+          >
+            {{ amount.amount }} {{ amount.symbol }}
+          </span>
+        </div>
       </v-card-title>
 
       <v-card-text>
@@ -123,6 +217,7 @@ function handleUpdatePeriod(data: { start: Date, end: Date }) {
               </v-col>
 
               <v-col
+                v-if="!useConvertedCurrency || !selectedCurrency"
                 align="center"
                 cols="12"
               >
@@ -130,11 +225,19 @@ function handleUpdatePeriod(data: { start: Date, end: Date }) {
                   v-for="([
                     currency,
                     amount,
-                  ]) in Object.entries(events.find(e => e.time === dayData.dateTimeString.substring(0, 10))?.amountsPerCurrency || {}).slice(0, 2)"
+                  ]) in Object.entries(findEvent(dayData.dateTimeString)?.amountsPerCurrency || {}).slice(0, 2)"
                   :key="currency"
                 >
                   {{ `${amount} ${getCurrencySymbol(currency)}` }}
                 </p>
+              </v-col>
+
+              <v-col
+                v-else
+                align="center"
+                cols="12"
+              >
+                {{ convertCurrencyForEvent(dayData.dateTimeString) }}
               </v-col>
             </v-row>
           </template>

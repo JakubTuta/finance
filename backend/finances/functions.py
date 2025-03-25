@@ -153,5 +153,5 @@ async def get_currency_rates():
         if rates is not None:
             del rates["_id"]
             rates_per_currency[currency] = rates
-    print(rates_per_currency)
+
     return rates_per_currency

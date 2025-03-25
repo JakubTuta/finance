@@ -172,6 +172,7 @@ export const useAppStore = defineStore('app', () => {
     loading,
     financeItems,
     summaryItems,
+    currencyRates,
     fetchFinanceItems,
     addFinanceItem,
     updateFinanceItem,

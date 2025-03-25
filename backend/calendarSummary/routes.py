@@ -41,7 +41,7 @@ async def get_calendar_summary(
             summary[string_date] = {}
 
         if currency not in summary[string_date]:
-            summary[string_date] = {currency: 0}
+            summary[string_date][currency] = 0
 
         summary[string_date][currency] += round(item.amount, 2)
 
