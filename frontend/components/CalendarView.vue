@@ -141,7 +141,7 @@ function convertCurrencyForEvent(date: string) {
     acc += convertCurrency(amount, currency, selectedCurrency.value!)
 
     return acc
-  }, 0).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${selectedCurrency.value}`
+  }, 0).toFixed(2).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} ${getCurrencySymbol(selectedCurrency.value!)}`
 }
 </script>
 
