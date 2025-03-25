@@ -103,13 +103,17 @@ function convertCurrency(amount: number, from: string, to: string) {
 }
 
 function getCellColor(time: string) {
+  if (!useConvertedCurrency.value || !selectedCurrency.value) {
+    return ''
+  }
+
   const event = findEvent(time.substring(0, 10))
 
   if (!event) {
     return ''
   }
 
-  const convertedAmount = Object.entries(event.amountsPerCurrency).reduce((acc, [currency, amount]) => acc + convertCurrency(amount, currency, 'USD'), 0)
+  const convertedAmount = Object.entries(event.amountsPerCurrency).reduce((acc, [currency, amount]) => acc + convertCurrency(amount, currency, selectedCurrency.value!), 0)
 
   return convertedAmount > 0
     ? 'rgba(0, 255, 0, 0.1)'
