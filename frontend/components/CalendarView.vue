@@ -26,7 +26,6 @@ const config = {
 }
 
 const events = computed(() => {
-  console.log(summaryItems.value)
   const year = selectedDate.value.getFullYear()
   const month = (selectedDate.value.getMonth() + 1).toString().padStart(2, '0')
   const key = `${year}-${month}`

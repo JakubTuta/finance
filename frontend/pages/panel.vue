@@ -3,9 +3,8 @@ definePageMeta({ middleware: ['auth'] })
 
 const appStore = useAppStore()
 
-onMounted(async () => {
-  await appStore.updateCurrencyRates()
-  await appStore.fetchCurrencyRates()
+onMounted(() => {
+  appStore.updateCurrencyRates().then(() => appStore.fetchCurrencyRates())
 })
 
 const selectedTab = ref('Detailed')
